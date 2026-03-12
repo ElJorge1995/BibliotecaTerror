@@ -11,7 +11,7 @@ const currentYear = new Date().getFullYear()
 
     <div class="footer-bottom">
       <a href="#">Terminos legales</a>
-      <p>© {{ currentYear }} Biblioteca del Terror. Todos los derechos reservados.</p>
+      <p>© {{ currentYear }} Librum Tenebris. Todos los derechos reservados.</p>
     </div>
   </footer>
 </template>
