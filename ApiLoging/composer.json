@@ -1,0 +1,9 @@
+{
+  "name": "reglado/auth-server",
+  "description": "Raw PHP auth server with JWT and global logout via token revocation",
+  "type": "project",
+  "require": {
+    "firebase/php-jwt": "^6.11",
+    "phpmailer/phpmailer": "^7.0"
+  }
+}
