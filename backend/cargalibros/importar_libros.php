@@ -11,7 +11,17 @@ for ($pagina = 0; $pagina < 5; $pagina++) {//5 paginas
 
     $url = "https://www.googleapis.com/books/v1/volumes?q=subject:horror&langRestrict=en&maxResults=40&startIndex=$startIndex";
 
-    $respuesta = @file_get_contents($url);//El @ suprime warnings
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $respuesta = curl_exec($ch);
+    
+    if(curl_errno($ch)){
+        echo "cURL Error: " . curl_error($ch) . "<br>";
+    }
+    
+    curl_close($ch);
 
     if (!$respuesta) {
         echo "Error en petición<br>";
