@@ -1,5 +1,17 @@
 <?php
-// ---- CORS ----
+/**
+ * Librum Tenebris - API Principal del Catálogo y Alquileres
+ * 
+ * Este microservicio maneja todas las interacciones con la base de datos `libros`
+ * y `prestamos`. Funciona como un enrutador REST mediante el parámetro GET `action`.
+ * Provee listados con filtros de favoritos, calificaciones, control de estados
+ * de préstamo y deducción/restauración de stock.
+ * 
+ * @author ElJorge1995
+ * @version 1.5.0
+ */
+
+// ---- CORS y Headers ----
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -12,10 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/conexion.php';
 
+/** @var string $action Control principal de rutas RESTful estáticas */
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
+    /**
+     * @route GET /libros_api.php?action=recientes&limit={X}&usuario_id={Y}
+     * @desc Devuelve los últimos libros añadidos al catálogo y cruza favoritos si existe usuario.
+     */
     // GET /libros_api.php?action=recientes&limit=8
     case 'recientes':
         $limit = max(1, min(50, (int)($_GET['limit'] ?? 8)));

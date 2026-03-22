@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
 import authApi from '../api/auth'
 
+/**
+ * Librum Tenebris - Almacén Central de Autenticación (Pinia)
+ * 
+ * Gestiona el ciclo de vida del usuario de cara al Frontend. 
+ * Contiene el Token JWT en memoria y en localStorage para persistencia,
+ * y facilita endpoints rápidos de login, logout e hidratación de perfil.
+ */
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
@@ -43,6 +51,10 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    /**
+     * Autentica al usuario contra la API y clona su token JWT si las credenciales son válidas.
+     * @param {Object} credentials Contiene user/email y password.
+     */
     async login(credentials) {
       this.loading = true
       this.error = null

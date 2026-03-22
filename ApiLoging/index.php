@@ -1,4 +1,17 @@
 <?php
+/**
+ * Librum Tenebris - API de Autenticación Centralizada (Gateway)
+ * 
+ * Punto de entrada principal para todas las peticiones relacionadas con 
+ * identificadores de sesión, inicios de sesión, registro, perfiles de usuario 
+ * y validaciones JWT (JSON Web Tokens). 
+ * 
+ * Funciona bajo un enrutador IF/ELSE minimalista para conectar endpoints web
+ * directamente a métodos predefinidos estáticos de `AuthController.php`.
+ * 
+ * @author ElJorge1995
+ * @package ApiLoging
+ */
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/config/Env.php';

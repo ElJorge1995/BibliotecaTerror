@@ -121,12 +121,21 @@ const filteredAlquileres = computed(() => {
   })
 })
 
+/**
+ * Filtra los campos dinámicos de los alquileres mapeando la ID del dueño contra 
+ * el array `users` global para incrustar su nombre en la tabla. 
+ */
 const getUserName = (userId) => {
+  if (!userId) return 'Usuario Desconocido'
   if (!users.value || users.value.length === 0) return `User #${userId}`
   const u = users.value.find(user => user.id === userId)
   return u ? u.username : `User #${userId}`
 }
 
+/**
+ * Motor matemático que computa la discrepancia actual frente a la fecha de caducidad
+ * de los 14 días prestados para advertir del sobreuso mediante semáforos verdes/rojos.
+ */
 const getDaysRemaining = (fechaDevolucion) => {
   if (!fechaDevolucion) return 'A la espera'
   const end = new Date(fechaDevolucion)
@@ -135,6 +144,10 @@ const getDaysRemaining = (fechaDevolucion) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
+/**
+ * Modifica el estado comercial en la Base de Datos y actualiza la UI.
+ * Si aprueba una entrega, anula la fecha esperada estableciendo una fija definitiva local.
+ */
 const handleAlquilerStatusUpdate = async (rent, newStatus) => {
   const previousStatus = rent.estado
   try {

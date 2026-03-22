@@ -6,6 +6,15 @@ import NovedadesPage from '../pages/NovedadesPage.vue'
 import RecomendacionesPage from '../pages/RecomendacionesPage.vue'
 import { useAuthStore } from '../stores/auth'
 
+/**
+ * Librum Tenebris - Enrutador Principal del Frontend (Vue Router 4)
+ * 
+ * Configurado en modo WebHistory para evitar hashes (`#`) maliciosos en la URL.
+ * La mayoría de las rutas usan carga diferida (lazy loading `() => import(...)`)
+ * para fraccionar el peso del bundle JavaScript en producción.
+ * Emplea guardias de navegación meta-tags para interceptar intrusos en /admin.
+ */
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
