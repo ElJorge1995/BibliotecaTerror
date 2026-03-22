@@ -79,6 +79,21 @@ const router = createRouter({
       name: 'admin',
       component: () => import('../pages/AdminPage.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/terminos',
+      name: 'terms',
+      component: () => import('../pages/TermsPage.vue')
+    },
+    {
+      path: '/privacidad',
+      name: 'privacy',
+      component: () => import('../pages/PrivacyPage.vue')
+    },
+    {
+      path: '/cookies',
+      name: 'cookies',
+      component: () => import('../pages/CookiesPage.vue')
     }
   ]
 })

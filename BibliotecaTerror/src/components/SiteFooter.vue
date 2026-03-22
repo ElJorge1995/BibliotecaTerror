@@ -35,11 +35,9 @@ const currentYear = new Date().getFullYear()
       <div class="footer-col">
         <div class="footer-badge">NAVEGACIÓN</div>
         <nav class="footer-nav">
-          <a href="/">Inicio</a>
-          <a href="#">Catálogo</a>
-          <a href="#">Novedades</a>
-          <a href="#">Eventos</a>
-          <a href="/registro">Registro</a>
+          <RouterLink to="/">Inicio</RouterLink>
+          <RouterLink to="/buscar">Colección</RouterLink>
+          <RouterLink to="/recomendaciones">Recomendaciones</RouterLink>
         </nav>
       </div>
 
@@ -58,11 +56,11 @@ const currentYear = new Date().getFullYear()
     <div class="footer-bottom">
       <p>© {{ currentYear }} Librum Tenebris. Todos los derechos reservados.</p>
       <div class="footer-bottom-links">
-        <a href="#">Términos legales</a>
+        <RouterLink to="/terminos">Términos legales</RouterLink>
         <span class="separator">·</span>
-        <a href="#">Privacidad</a>
+        <RouterLink to="/privacidad">Privacidad</RouterLink>
         <span class="separator">·</span>
-        <a href="#">Cookies</a>
+        <RouterLink to="/cookies">Cookies</RouterLink>
       </div>
     </div>
   </footer>

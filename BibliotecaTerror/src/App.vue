@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import SiteHeader from './components/SiteHeader.vue'
 import SiteFooter from './components/SiteFooter.vue'
 import LoginModal from './components/LoginModal.vue'
+import CookieBanner from './components/CookieBanner.vue'
 
 const route = useRoute()
 const isLoginModalOpen = ref(false)
@@ -33,5 +34,6 @@ watch(
     <SiteFooter />
 
     <LoginModal :is-open="isLoginModalOpen" @close="closeLoginModal" />
+    <CookieBanner />
   </div>
 </template>
