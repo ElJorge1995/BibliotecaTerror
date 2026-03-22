@@ -7,8 +7,8 @@
       Un espacio digital para lectores que buscan tension, misterio y oscuridad.
     </p>
     <div class="actions">
-      <button type="button" class="primary">Explorar coleccion</button>
-      <button type="button" class="ghost">Ver recomendaciones</button>
+      <RouterLink to="/buscar" class="primary">Explorar coleccion</RouterLink>
+      <RouterLink to="/recomendaciones" class="ghost">Ver recomendaciones</RouterLink>
     </div>
   </section>
 </template>
@@ -70,5 +70,13 @@ h1 {
   border: 1px solid #383d4d;
   background: transparent;
   color: #e7e9ee;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.primary {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 </style>

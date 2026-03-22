@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
 import RegisterPage from '../pages/RegisterPage.vue'
+import RentalsPage from '../pages/RentalsPage.vue'
+import NovedadesPage from '../pages/NovedadesPage.vue'
+import RecomendacionesPage from '../pages/RecomendacionesPage.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -17,6 +20,16 @@ const router = createRouter({
       component: () => import('../pages/SearchPage.vue')
     },
     {
+      path: '/novedades',
+      name: 'novedades',
+      component: NovedadesPage
+    },
+    {
+      path: '/recomendaciones',
+      name: 'recomendaciones',
+      component: RecomendacionesPage
+    },
+    {
       path: '/libro/:id',
       name: 'book-details',
       component: () => import('../pages/BookDetailsPage.vue')
@@ -25,6 +38,12 @@ const router = createRouter({
       path: '/favoritos',
       name: 'favorites',
       component: () => import('../pages/FavoritesPage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/alquileres',
+      name: 'Alquileres',
+      component: RentalsPage,
       meta: { requiresAuth: true }
     },
     {

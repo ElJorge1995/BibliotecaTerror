@@ -3,6 +3,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import ghostLogo from '../assets/ghost-logo.svg'
 import adminIcon from '../assets/admin-user-icon.svg'
+import calendarIcon from '../assets/calendar.svg'
+import settingsIcon from '../assets/settings.svg'
+import favoriteIcon from '../assets/favorite.svg'
 import { useAuthStore } from '../stores/auth'
 
 const emit = defineEmits(['open-login'])
@@ -100,7 +103,7 @@ const goToBook = (id) => {
 const handleLogout = async () => {
   await authStore.logout()
   closeMenus()
-  router.push('/')
+  window.location.href = '/'
 }
 
 const userInitial = computed(() => {
@@ -180,8 +183,15 @@ const userInitial = computed(() => {
                 <span class="user-greeting">Hola, {{ authStore.user.username }}</span>
                 <span v-if="authStore.isAdmin" class="admin-badge">Admin</span>
               </div>
-              <RouterLink to="/favoritos" class="dropdown-link" @click="closeMenus">Mis Favoritos ★</RouterLink>
-              <RouterLink to="/perfil" class="dropdown-link" @click="closeMenus">Configuración</RouterLink>
+              <RouterLink to="/favoritos" class="dropdown-link dropdown-link-icon" @click="closeMenus">
+                Mis Favoritos <img :src="favoriteIcon" alt="Favoritos" class="dropdown-svg-icon" />
+              </RouterLink>
+              <RouterLink to="/alquileres" class="dropdown-link dropdown-link-icon" @click="closeMenus">
+                Mis Alquileres <img :src="calendarIcon" alt="Calendar" class="dropdown-svg-icon" />
+              </RouterLink>
+              <RouterLink to="/perfil" class="dropdown-link dropdown-link-icon" @click="closeMenus">
+                Configuración <img :src="settingsIcon" alt="Settings" class="dropdown-svg-icon" />
+              </RouterLink>
               <button class="dropdown-link logout-dropdown-btn" @click="handleLogout">Salir</button>
             </div>
           </div>
@@ -211,9 +221,9 @@ const userInitial = computed(() => {
     <nav id="main-menu" class="main-nav" :class="{ 'is-open': isMenuOpen }" aria-label="Navegación principal">
       <div class="nav-inner">
         <RouterLink to="/" class="nav-link" exact-active-class="is-active" @click="closeMenus">Inicio</RouterLink>
-        <a href="#" class="nav-link" @click="closeMenus">Catálogo</a>
-        <a href="#" class="nav-link" @click="closeMenus">Novedades</a>
-        <a href="#" class="nav-link" @click="closeMenus">Eventos</a>
+        <RouterLink to="/buscar" class="nav-link" exact-active-class="is-active" @click="closeMenus">Catálogo</RouterLink>
+        <RouterLink to="/novedades" class="nav-link" exact-active-class="is-active" @click="closeMenus">Novedades</RouterLink>
+        <RouterLink to="/recomendaciones" class="nav-link" exact-active-class="is-active" @click="closeMenus">Recomendaciones</RouterLink>
 
         <!-- Solo en móvil -->
         <template v-if="authStore.isAuthenticated">
@@ -593,6 +603,18 @@ const userInitial = computed(() => {
 
 .logout-dropdown-btn {
   color: #ed4d4d;
+}
+
+.dropdown-link-icon {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+}
+.dropdown-svg-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.9;
+  filter: brightness(0) invert(1);
 }
 .logout-dropdown-btn:hover {
   background: rgba(237, 77, 77, 0.15);

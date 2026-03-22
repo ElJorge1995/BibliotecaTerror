@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS `favoritos` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `unique_user_libro` (`usuario_id`, `libro_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+DROP TABLE IF EXISTS `prestamos`;
+CREATE TABLE IF NOT EXISTS `prestamos` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `usuario_id` INT NOT NULL,
+    `libro_id` INT NOT NULL,
+    `fecha_prestamo` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `fecha_devolucion` DATETIME NULL,
+    `estado` ENUM('pendiente', 'activo', 'devuelto') DEFAULT 'activo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;

@@ -12,9 +12,18 @@ export default {
    * Obtiene los últimos libros añadidos.
    * @param {number} limit - Número máximo de libros (por defecto 8)
    */
-  getRecientes(limit = 8) {
+  getRecientes(limit = 8, usuarioId = null) {
     return booksApi.get('/libros_api.php', {
-      params: { action: 'recientes', limit }
+      params: { action: 'recientes', limit,  ...(usuarioId && { usuario_id: usuarioId }) }
+    })
+  },
+
+  /**
+   * Obtiene los libros mejor valorados (Top Rated).
+   */
+  getRecomendaciones(limit = 32, usuarioId = null) {
+    return booksApi.get('/libros_api.php', {
+      params: { action: 'recomendaciones', limit, ...(usuarioId && { usuario_id: usuarioId }) }
     })
   },
 
@@ -22,9 +31,9 @@ export default {
    * Busca libros por título o autor.
    * @param {string} query - Término de búsqueda
    */
-  buscar(query) {
+  buscar(query, usuarioId = null) {
     return booksApi.get('/libros_api.php', {
-      params: { action: 'buscar', q: query }
+      params: { action: 'buscar', q: query, ...(usuarioId && { usuario_id: usuarioId }) }
     })
   },
 
@@ -57,9 +66,9 @@ export default {
     })
   },
 
-  getAllBooks() {
+  getAllBooks(usuarioId = null) {
     return booksApi.get('/libros_api.php', {
-      params: { action: 'todos' }
+      params: { action: 'todos', ...(usuarioId && { usuario_id: usuarioId }) }
     })
   },
 
@@ -68,6 +77,43 @@ export default {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
+    })
+  },
+
+  alquilarLibro(usuarioId, libroId, nombreUsuario) {
+    return booksApi.post('/libros_api.php?action=alquilar', {
+      usuario_id: usuarioId,
+      libro_id: libroId,
+      nombre_usuario: nombreUsuario
+    })
+  },
+
+  getMisAlquileres(usuarioId) {
+    return booksApi.get('/libros_api.php', {
+      params: { 
+        action: 'mis_alquileres',
+        usuario_id: usuarioId
+      }
+    })
+  },
+
+  getAllAlquileres() {
+    return booksApi.get('/libros_api.php', {
+      params: { action: 'todos_alquileres' }
+    })
+  },
+
+  updateAlquilerStatus(prestamoId, nuevoEstado) {
+    return booksApi.post('/libros_api.php?action=actualizar_alquiler', {
+      prestamo_id: prestamoId,
+      estado: nuevoEstado
+    })
+  },
+
+  valorarAlquiler(prestamoId, rating) {
+    return booksApi.post('/libros_api.php?action=valorar_alquiler', {
+      prestamo_id: prestamoId,
+      rating: rating
     })
   }
 }

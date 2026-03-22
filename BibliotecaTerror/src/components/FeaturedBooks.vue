@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import BookCard from './BookCard.vue'
 import booksApi from '../api/books.js'
+import { useAuthStore } from '../stores/auth'
 
 // Import Swiper Vue Components
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -21,9 +22,11 @@ const books   = ref([])
 const loading = ref(true)
 const error   = ref(null)
 
+const authStore = useAuthStore()
+
 onMounted(async () => {
   try {
-    const res = await booksApi.getRecientes(12) // Pedimos 12 para que el carrusel tenga más elementos
+    const res = await booksApi.getRecientes(12, authStore.user?.id) // Pedimos 12 para que el carrusel tenga más elementos
     books.value = res.data.data ?? []
   } catch (e) {
     error.value = 'No se pudieron cargar los libros. Comprueba que el servidor de libros está activo.'
@@ -75,10 +78,12 @@ onMounted(async () => {
       >
         <swiper-slide v-for="book in books" :key="book.id" class="b-slide">
           <BookCard
-            :id="book.id"
+            :id="Number(book.id)"
             :title="book.titulo_es || book.titulo"
             :author="book.autor"
             :portada="book.portada"
+            :rating="book.rating"
+            :isFavorito="Number(book.is_favorito) === 1"
             class="large-card"
           />
         </swiper-slide>

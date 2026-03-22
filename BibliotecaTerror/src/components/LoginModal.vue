@@ -29,7 +29,7 @@ const handleLogin = async () => {
   try {
     await authStore.login({ email: email.value, password: password.value })
     emit('close')
-    router.push('/')
+    window.location.reload()
   } catch (err) {
     error.value = authStore.error || 'Error al iniciar sesión'
   } finally {

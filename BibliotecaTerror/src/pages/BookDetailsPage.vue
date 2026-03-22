@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import booksApi from '../api/books.js'
 import { useAuthStore } from '../stores/auth'
+import favoriteIcon from '../assets/favorite.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,6 +14,31 @@ const error = ref(null)
 
 const isFavorito = ref(false)
 const togglingFav = ref(false)
+
+const isRenting = ref(false)
+const rentMsg = ref({ text: '', type: '' })
+
+const handleAlquilar = async () => {
+  if (!authStore.isAuthenticated || !authStore.user?.id || !book.value) return
+  isRenting.value = true
+  rentMsg.value = { text: '', type: '' }
+  
+  try {
+    await booksApi.alquilarLibro(authStore.user.id, book.value.id, authStore.user.username)
+    rentMsg.value = { text: '¡Libro alquilado con éxito! Tienes este volumen reservado en tu cuenta.', type: 'success' }
+    // Recargar para refrescar stock si lo tuvieramos en vista u otra info
+    // (Omitimos reload entero para no hacer blinking visual de imagen, solo editamos stock local prop si existiera, pero de momento reload invisible de datos:)
+    const res = await booksApi.getById(book.value.id)
+    book.value = res.data.data
+  } catch(err) {
+    rentMsg.value = { 
+      text: err.response?.data?.error || 'Error al procesar el alquiler en el servidor.',
+      type: 'error'
+    }
+  } finally {
+    isRenting.value = false
+  }
+}
 
 const checkFav = async (id) => {
   if (!authStore.isAuthenticated || !authStore.user?.id) return
@@ -108,6 +134,7 @@ const goBack = () => {
               <!-- Extra info badges space -->
               <div class="book-badges">
                  <span class="badge" v-if="book.google_id">Google Books</span>
+                 <span class="badge badge-rating" v-if="book.rating && Number(book.rating) > 0">★ {{ Number(book.rating).toFixed(1) }} / 5</span>
               </div>
 
               <div class="book-separator"></div>
@@ -117,17 +144,28 @@ const goBack = () => {
                 <div class="description-text" v-html="book.descripcion_es || book.descripcion || 'No hay descripción disponible para este volumen.'"></div>
               </div>
               
+              <div v-if="rentMsg.text" :class="['rent-msg-box', rentMsg.type]">
+                {{ rentMsg.text }}
+              </div>
+
               <div class="book-actions">
-                <button class="action-btn primary-btn">Alquilar Libro</button>
+                <button 
+                  v-if="authStore.isAuthenticated"
+                  class="action-btn primary-btn" 
+                  @click="handleAlquilar"
+                  :disabled="isRenting || (book.stock !== undefined && book.stock <= 0)"
+                >
+                  {{ isRenting ? 'Procesando...' : ((book.stock !== undefined && book.stock <= 0) ? 'Agotado Temporalmente' : 'Alquilar Libro') }}
+                </button>
+
                 <button v-if="authStore.isAuthenticated" 
                         class="action-btn star-btn" 
                         :class="{ 'is-active': isFavorito }"
                         @click="toggleFav"
                         :disabled="togglingFav"
                         aria-label="Añadir a lista/favoritos">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                  </svg>
+                  <img :src="favoriteIcon" alt="Favorito" class="fav-svg-icon" :class="{'active-fav': isFavorito}" />
+                  <span v-if="false">★</span> <!-- Legacy spacing -->
                 </button>
               </div>
            </div>
@@ -299,6 +337,13 @@ const goBack = () => {
   text-transform: uppercase;
 }
 
+.badge-rating {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: rgba(255, 193, 7, 0.4);
+  color: #ffc107;
+  font-size: 0.9rem;
+}
+
 .book-separator {
   height: 1px;
   background: linear-gradient(to right, rgba(237, 77, 77, 0.4), transparent);
@@ -351,10 +396,43 @@ const goBack = () => {
   box-shadow: 0 4px 15px rgba(237, 77, 77, 0.3);
 }
 
-.primary-btn:hover {
+.primary-btn:hover:not(:disabled) {
   background: #ff5e5e;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(237, 77, 77, 0.4);
+}
+
+.primary-btn:disabled {
+  background: #33394b;
+  color: #7a839e;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.rent-msg-box {
+  margin-top: 2rem;
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  animation: slideFadeIn 0.3s ease;
+}
+
+.rent-msg-box.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.rent-msg-box.error {
+  background: rgba(237, 77, 77, 0.15);
+  color: #ff8a8a;
+  border: 1px solid rgba(237, 77, 77, 0.3);
+}
+
+@keyframes slideFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .star-btn {
@@ -365,6 +443,19 @@ const goBack = () => {
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
+  gap: 0.5rem;
+}
+
+.fav-svg-icon {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+  transition: all 0.2s ease;
+}
+
+.fav-svg-icon.active-fav {
+  filter: invert(24%) sepia(85%) saturate(7402%) hue-rotate(354deg) brightness(97%) contrast(115%);
+  /* Esto equivale al color rgba rojo #ed4d4d aproximado */
 }
 
 .star-btn svg {
@@ -372,20 +463,19 @@ const goBack = () => {
 }
 
 .star-btn:hover {
-  background: rgba(255, 193, 7, 0.1);
-  border-color: rgba(255, 193, 7, 0.4);
-  color: #ffc107;
+  background: rgba(237, 77, 77, 0.1);
+  border-color: rgba(237, 77, 77, 0.4);
+  color: #ed4d4d;
   transform: translateY(-2px);
+}
+.star-btn:hover .fav-svg-icon {
+  filter: invert(34%) sepia(98%) saturate(1754%) hue-rotate(338deg) brightness(97%) contrast(92%);
 }
 
 .star-btn.is-active {
-  background: rgba(255, 193, 7, 0.15);
-  border-color: rgba(255, 193, 7, 0.5);
-  color: #ffc107;
-}
-
-.star-btn:hover svg, .star-btn.is-active svg {
-  fill: rgba(255, 193, 7, 0.8);
+  background: rgba(237, 77, 77, 0.15);
+  border-color: rgba(237, 77, 77, 0.5);
+  color: #ed4d4d;
 }
 
 /* Estados */

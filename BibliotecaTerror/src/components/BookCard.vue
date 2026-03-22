@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import favoriteIcon from '../assets/favorite.svg'
 
 const props = defineProps({
   id: {
@@ -25,6 +26,14 @@ const props = defineProps({
   tag: {
     type: String,
     default: null
+  },
+  rating: {
+    type: [Number, String],
+    default: null
+  },
+  isFavorito: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -56,6 +65,10 @@ const goToDetails = () => {
 
     <!-- Portada -->
     <div class="cover-wrap">
+      <img v-if="isFavorito" :src="favoriteIcon" alt="En Favoritos" class="global-fav-card-badge" title="Lo tienes en Favoritos" />
+      <div v-if="rating && Number(rating) > 0" class="global-rating-badge">
+        <span class="star-icon">★</span> {{ Number(rating).toFixed(1) }}
+      </div>
       <img v-if="portada" :src="portada" :alt="title" class="cover-img" />
       <div v-else class="cover-placeholder">
         <span>📖</span>
@@ -84,6 +97,40 @@ const goToDetails = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.global-rating-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(10, 12, 18, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.global-rating-badge .star-icon {
+  color: #ffc107;
+  font-size: 1rem;
+}
+
+.global-fav-card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  z-index: 10;
+  filter: invert(24%) sepia(85%) saturate(7402%) hue-rotate(354deg) brightness(97%) contrast(115%) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
 }
 
 .book-card::before {

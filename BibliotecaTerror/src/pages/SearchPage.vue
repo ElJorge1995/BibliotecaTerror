@@ -1,27 +1,29 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import BookCard from '../components/BookCard.vue'
 import booksApi from '../api/books.js'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const books = ref([])
 const loading = ref(false)
 const error = ref(null)
 
 const doSearch = async (query) => {
-  if (!query) {
-    books.value = []
-    loading.value = false
-    return
-  }
-  
   loading.value = true
   error.value = null
 
   try {
-    const res = await booksApi.buscar(query)
-    books.value = res.data.data ?? []
+    const userId = authStore.user?.id || null
+    if (!query) {
+      const res = await booksApi.getAllBooks(userId)
+      books.value = res.data.data ?? []
+    } else {
+      const res = await booksApi.buscar(query, userId)
+      books.value = res.data.data ?? []
+    }
   } catch (e) {
     console.error(e)
     error.value = 'Ocurrió un error al buscar libros. Inténtalo de nuevo más tarde.'
@@ -44,9 +46,9 @@ watch(() => route.query.q, (newQ) => {
 <template>
   <div class="search-page page-container">
     <header class="page-header">
-      <h1>Resultados de búsqueda</h1>
+      <h1>{{ route.query.q ? 'Resultados de búsqueda' : 'Catálogo Completo' }}</h1>
       <p v-if="route.query.q" class="search-term">mostrando resultados para "<strong>{{ route.query.q }}</strong>"</p>
-      <p v-else class="search-term">Escribe algo en el buscador para empezar.</p>
+      <p v-else class="search-term">Explora nuestra colección completa de obras de terror y misterio.</p>
     </header>
 
     <div class="results-container">
@@ -72,10 +74,12 @@ watch(() => route.query.q, (newQ) => {
         <BookCard
           v-for="book in books"
           :key="book.id"
-          :id="book.id"
+          :id="Number(book.id)"
           :title="book.titulo_es || book.titulo"
           :author="book.autor"
           :portada="book.portada"
+          :rating="book.rating"
+          :isFavorito="Number(book.is_favorito) === 1"
         />
       </div>
     </div>

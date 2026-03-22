@@ -5,6 +5,7 @@ import booksApi from '../api/books.js'
 import { useAuthStore } from '../stores/auth'
 import personIcon from '../assets/person.svg'
 import bookIcon from '../assets/book.svg'
+import calendarIcon from '../assets/calendar.svg'
 
 const authStore = useAuthStore()
 
@@ -88,9 +89,73 @@ const filteredBooks = computed(() => {
   })
 })
 
+// --- Lógica de Alquileres ---
+const alquileres = ref([])
+const alquileresLoading = ref(false)
+const alquileresError = ref(null)
+
+const fetchAlquileres = async () => {
+  alquileresLoading.value = true
+  alquileresError.value = null
+  try {
+    const res = await booksApi.getAllAlquileres()
+    alquileres.value = res.data.data || []
+  } catch (err) {
+    console.error('Error cargando alquileres:', err)
+    alquileresError.value = 'No se pudo cargar el historial de alquileres.'
+  } finally {
+    alquileresLoading.value = false
+  }
+}
+
+const alquileresSearchQuery = ref('')
+
+const filteredAlquileres = computed(() => {
+  if (!alquileresSearchQuery.value) return alquileres.value
+  const query = alquileresSearchQuery.value.toLowerCase()
+  return alquileres.value.filter(rent => {
+    const userName = (rent.nombre_usuario || getUserName(rent.usuario_id)).toLowerCase()
+    const bookTitle = rent.titulo ? rent.titulo.toLowerCase() : ''
+    const rentId = String(rent.prestamo_id)
+    return userName.includes(query) || bookTitle.includes(query) || rentId.includes(query)
+  })
+})
+
+const getUserName = (userId) => {
+  if (!users.value || users.value.length === 0) return `User #${userId}`
+  const u = users.value.find(user => user.id === userId)
+  return u ? u.username : `User #${userId}`
+}
+
+const getDaysRemaining = (fechaDevolucion) => {
+  if (!fechaDevolucion) return 'A la espera'
+  const end = new Date(fechaDevolucion)
+  const now = new Date()
+  const diffTime = end - now
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
+
+const handleAlquilerStatusUpdate = async (rent, newStatus) => {
+  const previousStatus = rent.estado
+  try {
+    rent.estado = newStatus
+    await booksApi.updateAlquilerStatus(rent.prestamo_id, newStatus)
+    if (newStatus === 'devuelto' || previousStatus === 'devuelto') {
+      fetchBooks() // Resincroniza stock por el fondo
+    }
+  } catch(err) {
+    rent.estado = previousStatus
+    console.error(err)
+    alert('Error al actualizar el estado del préstamo.')
+  }
+}
+
 watch(activeTab, (newTab) => {
   if (newTab === 'libros' && books.value.length === 0) {
     fetchBooks()
+  }
+  if (newTab === 'alquileres' && alquileres.value.length === 0) {
+    fetchAlquileres()
   }
 })
 
@@ -190,6 +255,12 @@ onMounted(() => {
           @click="activeTab = 'libros'"
         >
           <img :src="bookIcon" class="tab-icon-img" alt="Inventario" /> Inventario
+        </button>
+        <button 
+          :class="['tab-btn', { active: activeTab === 'alquileres' }]" 
+          @click="activeTab = 'alquileres'"
+        >
+          <img :src="calendarIcon" class="tab-icon-img" alt="Alquileres" /> Alquileres
         </button>
       </div>
     </div>
@@ -304,6 +375,83 @@ onMounted(() => {
                 <span :class="['badge', book.stock > 0 ? 'badge-success' : 'badge-warning']">
                   {{ book.stock > 0 ? 'Disponible' : 'Agotado' }}
                 </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =============== PESTAÑA: ALQUILERES =============== -->
+    <div v-show="activeTab === 'alquileres'">
+      <div v-if="alquileresLoading" class="state-container">
+        <div class="spinner"></div>
+        <p>Cargando alquileres...</p>
+      </div>
+
+      <div v-else-if="alquileresError" class="state-container error-state">
+        <p>{{ alquileresError }}</p>
+        <button @click="fetchAlquileres" class="retry-btn">Reintentar</button>
+      </div>
+
+      <div v-else class="table-container">
+        <div class="search-bar-container">
+          <input 
+            type="search" 
+            v-model="alquileresSearchQuery" 
+            placeholder="Buscar por usuario, libro o ID..." 
+            class="admin-search-input"
+          />
+        </div>
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>ID Préstamo</th>
+              <th>Usuario</th>
+              <th>Libro Reclamado</th>
+              <th>Días Restantes</th>
+              <th>Control de Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="rent in filteredAlquileres" :key="rent.prestamo_id">
+              <td class="cell-id">#{{ rent.prestamo_id }}</td>
+              <td class="cell-user">
+                <strong>{{ rent.nombre_usuario || getUserName(rent.usuario_id) }}</strong>
+              </td>
+              <td class="cell-email">{{ rent.titulo }}</td>
+              <td class="cell-verified">
+                <span 
+                  class="badge" 
+                  :class="{
+                    'badge-success': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'number' && getDaysRemaining(rent.fecha_devolucion) >= 0,
+                    'badge-danger': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'number' && getDaysRemaining(rent.fecha_devolucion) < 0,
+                    'badge-warning': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'string',
+                    'badge-returned': rent.estado === 'devuelto'
+                  }" 
+                  style="font-size: 0.9rem; padding: 0.4rem 0.8rem;"
+                >
+                   {{ rent.estado === 'devuelto' ? 'DEVUELTO' : getDaysRemaining(rent.fecha_devolucion) + (typeof getDaysRemaining(rent.fecha_devolucion) === 'number' ? ' días' : '') }}
+                </span>
+              </td>
+              <td class="cell-role">
+                <div class="status-controls">
+                  <div v-if="rent.estado === 'devuelto'" class="return-date-text">
+                    {{ rent.fecha_entregado ? 'Devuelto el ' + formatDate(rent.fecha_entregado) : 'Desconocida' }}
+                  </div>
+                  
+                  <button 
+                    v-if="rent.estado === 'pendiente'" 
+                    @click="handleAlquilerStatusUpdate(rent, 'activo')"
+                    class="btn-activate"
+                  >Activar</button>
+
+                  <button 
+                    v-if="rent.estado === 'activo'" 
+                    @click="handleAlquilerStatusUpdate(rent, 'devuelto')"
+                    class="btn-return"
+                  >Devolver</button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -584,11 +732,12 @@ onMounted(() => {
 }
 
 .cell-user {
-  display: flex;
-  flex-direction: column;
+  /* Retiramos display flex directo sobre td para que no rompa el border-bottom nativo de display: table-cell */
 }
 
 .cell-user strong {
+  display: block;
+  color: #f0f2f7;
   color: #f0f2f7;
   font-size: 1rem;
 }
@@ -616,10 +765,20 @@ onMounted(() => {
   color: #4ade80;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
+.badge-danger {
+  background: rgba(237, 77, 77, 0.15);
+  color: #ed4d4d;
+  border-color: rgba(237, 77, 77, 0.4);
+}
 .badge-warning {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.4);
+}
+.badge-returned {
+  background: rgba(151, 160, 183, 0.15);
+  color: #97a0b7;
+  border-color: rgba(151, 160, 183, 0.4);
 }
 
 .role-select {
@@ -647,6 +806,12 @@ onMounted(() => {
 .cell-date {
   color: #7a839e;
   font-size: 0.85rem;
+}
+
+.badge-danger {
+  background: rgba(237, 77, 77, 0.2) !important;
+  color: #ff8a8a !important;
+  border: 1px solid rgba(237, 77, 77, 0.3) !important;
 }
 
 @keyframes fadeIn {
@@ -699,6 +864,59 @@ onMounted(() => {
 }
 
 /* --- MODAL --- */
+.status-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.return-date-text {
+  font-size: 0.8rem;
+  color: #97a0b7;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 80px;
+  text-align: center;
+}
+.status-badge.pendiente { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
+.status-badge.activo { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+.status-badge.devuelto { background: rgba(151, 160, 183, 0.2); color: #97a0b7; border: 1px solid rgba(151, 160, 183, 0.3); }
+
+.btn-activate {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.btn-activate:hover {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+.btn-return {
+  background: rgba(237, 77, 77, 0.15);
+  color: #ed4d4d;
+  border: 1px solid rgba(237, 77, 77, 0.4);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.btn-return:hover {
+  background: rgba(237, 77, 77, 0.3);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;

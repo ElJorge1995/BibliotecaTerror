@@ -19,11 +19,14 @@ switch ($action) {
     // GET /libros_api.php?action=recientes&limit=8
     case 'recientes':
         $limit = max(1, min(50, (int)($_GET['limit'] ?? 8)));
+        $usuario_id = (int)($_GET['usuario_id'] ?? 0);
+        $fav_select = $usuario_id > 0 ? ", IF(f.id IS NOT NULL, 1, 0) as is_favorito" : "";
+        $fav_join = $usuario_id > 0 ? " LEFT JOIN favoritos f ON l.id = f.libro_id AND f.usuario_id = " . $pdo->quote($usuario_id) : "";
 
         $stmt = $pdo->prepare(
-            "SELECT id, google_id, titulo, titulo_es, autor, stock, portada
-             FROM libros
-             ORDER BY id DESC
+            "SELECT l.id, l.google_id, l.titulo, l.titulo_es, l.autor, l.stock, l.portada, l.rating $fav_select
+             FROM libros l $fav_join
+             ORDER BY l.id DESC
              LIMIT $limit"
         );
         $stmt->execute();
@@ -32,20 +35,44 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $libros]);
         break;
 
+    // GET /libros_api.php?action=recomendaciones&limit=32
+    case 'recomendaciones':
+        $limit = max(1, min(100, (int)($_GET['limit'] ?? 32)));
+        $usuario_id = (int)($_GET['usuario_id'] ?? 0);
+        $fav_select = $usuario_id > 0 ? ", IF(f.id IS NOT NULL, 1, 0) as is_favorito" : "";
+        $fav_join = $usuario_id > 0 ? " LEFT JOIN favoritos f ON l.id = f.libro_id AND f.usuario_id = " . $pdo->quote($usuario_id) : "";
+
+        $stmt = $pdo->prepare(
+            "SELECT l.id, l.google_id, l.titulo, l.titulo_es, l.autor, l.stock, l.portada, l.rating $fav_select
+             FROM libros l $fav_join
+             WHERE l.rating >= 4.0
+             ORDER BY l.rating DESC, l.id DESC
+             LIMIT $limit"
+        );
+        $stmt->execute();
+        $recomendados = $stmt->fetchAll();
+
+        echo json_encode(['success' => true, 'data' => $recomendados]);
+        break;
+
     // GET /libros_api.php?action=buscar&q=termino
     case 'buscar':
         $q = trim($_GET['q'] ?? '');
+        $usuario_id = (int)($_GET['usuario_id'] ?? 0);
         if (empty($q)) {
             echo json_encode(['success' => true, 'data' => []]);
             break;
         }
 
+        $fav_select = $usuario_id > 0 ? ", IF(f.id IS NOT NULL, 1, 0) as is_favorito" : "";
+        $fav_join = $usuario_id > 0 ? " LEFT JOIN favoritos f ON l.id = f.libro_id AND f.usuario_id = " . $pdo->quote($usuario_id) : "";
+
         $searchTerm = "%$q%";
         $stmt = $pdo->prepare(
-            "SELECT id, google_id, titulo, titulo_es, autor, stock, portada
-             FROM libros
-             WHERE titulo LIKE :q OR titulo_es LIKE :q OR autor LIKE :q
-             ORDER BY id DESC
+            "SELECT l.id, l.google_id, l.titulo, l.titulo_es, l.autor, l.stock, l.portada, l.rating $fav_select
+             FROM libros l $fav_join
+             WHERE l.titulo LIKE :q OR l.titulo_es LIKE :q OR l.autor LIKE :q
+             ORDER BY l.id DESC
              LIMIT 50"
         );
         $stmt->execute(['q' => $searchTerm]);
@@ -132,12 +159,48 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
         break;
 
+    // GET /libros_api.php?action=mis_alquileres&usuario_id=X
+    case 'mis_alquileres':
+        $usuario_id = (int)($_GET['usuario_id'] ?? 0);
+        if ($usuario_id <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'usuario_id inválido']);
+            break;
+        }
+        $stmt = $pdo->prepare("
+            SELECT p.id as prestamo_id, p.fecha_prestamo, p.fecha_devolucion, p.estado, p.rating as tu_rating, p.fecha_entregado,
+                   l.id as libro_id, l.google_id, l.titulo, l.autor, l.portada, l.rating as nota_media 
+            FROM prestamos p
+            JOIN libros l ON p.libro_id = l.id
+            WHERE p.usuario_id = ?
+            ORDER BY p.fecha_prestamo DESC
+        ");
+        $stmt->execute([$usuario_id]);
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+        break;
+
+    // GET /libros_api.php?action=todos_alquileres (Administrator Only - No User Filter)
+    case 'todos_alquileres':
+        $stmt = $pdo->query("
+            SELECT p.id as prestamo_id, p.usuario_id, p.nombre_usuario, p.fecha_prestamo, p.fecha_devolucion, p.estado, p.fecha_entregado,
+                   l.id as libro_id, l.titulo, l.autor, l.portada 
+            FROM prestamos p
+            JOIN libros l ON p.libro_id = l.id
+            ORDER BY p.fecha_prestamo ASC
+        ");
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+        break;
+
     // GET /libros_api.php?action=todos
     case 'todos':
+        $usuario_id = (int)($_GET['usuario_id'] ?? 0);
+        $fav_select = $usuario_id > 0 ? ", IF(f.id IS NOT NULL, 1, 0) as is_favorito" : "";
+        $fav_join = $usuario_id > 0 ? " LEFT JOIN favoritos f ON l.id = f.libro_id AND f.usuario_id = " . $pdo->quote($usuario_id) : "";
+
         $stmt = $pdo->query(
-            "SELECT id, titulo, titulo_es, autor, stock 
-             FROM libros 
-             ORDER BY id DESC"
+            "SELECT l.id, l.titulo, l.titulo_es, l.autor, l.stock, l.portada, l.rating $fav_select
+             FROM libros l $fav_join
+             ORDER BY l.id DESC"
         );
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
         break;
@@ -196,6 +259,187 @@ switch ($action) {
         } catch(PDOException $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Error guardando en BD: ' . $e->getMessage()]);
+        }
+        break;
+
+    // POST /libros_api.php?action=alquilar
+    case 'alquilar':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $usuario_id = (int)($data['usuario_id'] ?? 0);
+        $libro_id = (int)($data['libro_id'] ?? 0);
+        $nombre_usuario = $data['nombre_usuario'] ?? 'Desconocido';
+        
+        if ($usuario_id <= 0 || $libro_id <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Parámetros inválidos']);
+            break;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // 1. Contar alquileres activos del usuario
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM prestamos WHERE usuario_id = ? AND estado = 'activo'");
+            $stmt->execute([$usuario_id]);
+            $prestamosActivos = $stmt->fetchColumn();
+
+            if ($prestamosActivos >= 2) {
+                $pdo->rollBack();
+                http_response_code(403);
+                echo json_encode(['error' => 'Ya has alcanzado el límite máximo de 2 libros alquilados.']);
+                break;
+            }
+
+            // 2. Verificar stock del libro (X lock for update opcional, haremos query atómica luego)
+            $stmt = $pdo->prepare("SELECT stock FROM libros WHERE id = ?");
+            $stmt->execute([$libro_id]);
+            $stockActual = $stmt->fetchColumn();
+
+            if ($stockActual === false || $stockActual <= 0) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['error' => 'El libro está agotado actualmente.']);
+                break;
+            }
+
+            // 3. Restar stock
+            $stmt = $pdo->prepare("UPDATE libros SET stock = stock - 1 WHERE id = ? AND stock > 0");
+            $stmt->execute([$libro_id]);
+
+            if ($stmt->rowCount() == 0) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['error' => 'Error de concurrencia: El libro se acaba de agotar.']);
+                break;
+            }
+
+            // 4. Crear préstamo en espera de reserva ('pendiente' y caducidad Nula)
+            $stmt = $pdo->prepare("INSERT INTO prestamos (usuario_id, nombre_usuario, libro_id, estado, fecha_devolucion) VALUES (?, ?, ?, 'pendiente', NULL)");
+            $stmt->execute([$usuario_id, $nombre_usuario, $libro_id]);
+
+            $pdo->commit();
+            echo json_encode(['success' => true]);
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Error procesando el alquiler: ' . $e->getMessage()]);
+        }
+        break;
+
+    // POST /libros_api.php?action=actualizar_alquiler
+    case 'actualizar_alquiler':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $prestamo_id = (int)($data['prestamo_id'] ?? 0);
+        $nuevo_estado = $data['estado'] ?? '';
+        
+        $estados_validos = ['pendiente', 'activo', 'devuelto'];
+        if ($prestamo_id <= 0 || !in_array($nuevo_estado, $estados_validos)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Parámetros inválidos o estado incorrecto.']);
+            break;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // Averiguamos el estado anterior y el libro_id
+            $stmt = $pdo->prepare("SELECT libro_id, estado FROM prestamos WHERE id = ?");
+            $stmt->execute([$prestamo_id]);
+            $prestamo = $stmt->fetch();
+
+            if (!$prestamo) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['error' => 'Préstamo no encontrado']);
+                break;
+            }
+
+            $estado_anterior = $prestamo['estado'];
+            $libro_id = $prestamo['libro_id'];
+
+            // Logica del Stock basada en el cambio
+            if ($estado_anterior !== 'devuelto' && $nuevo_estado === 'devuelto') {
+                // Devolvemos la unidad
+                $stmtStock = $pdo->prepare("UPDATE libros SET stock = stock + 1 WHERE id = ?");
+                $stmtStock->execute([$libro_id]);
+            } else if ($estado_anterior === 'devuelto' && $nuevo_estado !== 'devuelto') {
+                // Si el admin cometió un error y lo vuelve a poner como Activo, hay que volver a quitar el libro del sistema
+                $stmtStock = $pdo->prepare("UPDATE libros SET stock = stock - 1 WHERE id = ?");
+                $stmtStock->execute([$libro_id]);
+            }
+
+            // Actualizamos la fila y asignamos los 14 días si pasa de pendiente a activo por primera vez
+            if ($estado_anterior === 'pendiente' && $nuevo_estado === 'activo') {
+                $stmtUpdate = $pdo->prepare("UPDATE prestamos SET estado = ?, fecha_prestamo = NOW(), fecha_devolucion = DATE_ADD(NOW(), INTERVAL 14 DAY) WHERE id = ?");
+            } else if ($nuevo_estado === 'devuelto') {
+                $stmtUpdate = $pdo->prepare("UPDATE prestamos SET estado = ?, fecha_entregado = NOW() WHERE id = ?");
+            } else {
+                $stmtUpdate = $pdo->prepare("UPDATE prestamos SET estado = ? WHERE id = ?");
+            }
+            $stmtUpdate->execute([$nuevo_estado, $prestamo_id]);
+
+            $pdo->commit();
+            echo json_encode(['success' => true, 'mensaje' => 'Estado actualizado y stock ajustado']);
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al modificar alquiler: ' . $e->getMessage()]);
+        }
+        break;
+
+    // POST /libros_api.php?action=valorar_alquiler
+    case 'valorar_alquiler':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $prestamo_id = (int)($data['prestamo_id'] ?? 0);
+        $rating = (int)($data['rating'] ?? 0);
+
+        if ($prestamo_id <= 0 || $rating < 1 || $rating > 5) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Valoración inválida.']);
+            break;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("SELECT libro_id, usuario_id FROM prestamos WHERE id = ?");
+            $stmt->execute([$prestamo_id]);
+            $prestamo = $stmt->fetch();
+
+            if (!$prestamo) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['error' => 'Préstamo no encontrado']);
+                break;
+            }
+
+            $libro_id = $prestamo['libro_id'];
+
+            // Guardamos el rating del prestamo individual
+            $stmtUpdateP = $pdo->prepare("UPDATE prestamos SET rating = ? WHERE id = ?");
+            $stmtUpdateP->execute([$rating, $prestamo_id]);
+
+            // Forzamos el recálculo matemático de la nota del libro y lo grabamos:
+            $stmtMath = $pdo->prepare("
+              UPDATE libros 
+              SET rating = (
+                  SELECT COALESCE(AVG(rating), 0) 
+                  FROM prestamos 
+                  WHERE libro_id = ? AND rating IS NOT NULL
+              )
+              WHERE id = ?
+            ");
+            $stmtMath->execute([$libro_id, $libro_id]);
+
+            $pdo->commit();
+            echo json_encode(['success' => true]);
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al calcular rating: ' . $e->getMessage()]);
         }
         break;
 
