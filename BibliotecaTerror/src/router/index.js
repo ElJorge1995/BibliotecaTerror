@@ -12,6 +12,22 @@ const router = createRouter({
       component: HomePage
     },
     {
+      path: '/buscar',
+      name: 'search',
+      component: () => import('../pages/SearchPage.vue')
+    },
+    {
+      path: '/libro/:id',
+      name: 'book-details',
+      component: () => import('../pages/BookDetailsPage.vue')
+    },
+    {
+      path: '/favoritos',
+      name: 'favorites',
+      component: () => import('../pages/FavoritesPage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/registro',
       name: 'register',
       component: RegisterPage,

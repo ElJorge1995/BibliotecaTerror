@@ -13,6 +13,38 @@ const isProfileMenuOpen = ref(false)
 const searchQuery = ref('')
 const profileMenuRef = ref(null)
 
+import booksApi from '../api/books.js'
+const searchResults = ref([])
+const isSearching = ref(false)
+const showDropdown = ref(false)
+let searchTimeout = null
+
+const onSearchInput = () => {
+  clearTimeout(searchTimeout)
+  if (!searchQuery.value.trim()) {
+    searchResults.value = []
+    showDropdown.value = false
+    return
+  }
+  
+  showDropdown.value = true
+  searchTimeout = setTimeout(async () => {
+    isSearching.value = true
+    try {
+      const res = await booksApi.buscar(searchQuery.value)
+      searchResults.value = res.data.data?.slice(0, 5) ?? []
+    } catch (e) {
+      console.error(e)
+    } finally {
+      isSearching.value = false
+    }
+  }, 250)
+}
+
+const closeDropdown = () => {
+  setTimeout(() => { showDropdown.value = false }, 200)
+}
+
 const toggleProfileMenu = () => {
   isProfileMenuOpen.value = !isProfileMenuOpen.value
 }
@@ -20,6 +52,7 @@ const toggleProfileMenu = () => {
 const closeMenus = () => {
   isMenuOpen.value = false
   isProfileMenuOpen.value = false
+  showDropdown.value = false
 }
 
 const handleClickOutside = (event) => {
@@ -34,6 +67,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  clearTimeout(searchTimeout)
 })
 
 const toggleMenu = () => {
@@ -48,8 +82,19 @@ const openLoginFromMenu = () => {
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
-    console.log('Buscar:', searchQuery.value)
+    router.push({ path: '/buscar', query: { q: searchQuery.value } })
+    closeMenus()
   }
+}
+
+const goToDirectSearch = (titulo) => {
+  router.push({ path: '/buscar', query: { q: titulo } })
+  closeMenus()
+}
+
+const goToBook = (id) => {
+  router.push(`/libro/${id}`)
+  closeMenus()
 }
 
 const handleLogout = async () => {
@@ -76,16 +121,45 @@ const userInitial = computed(() => {
       </RouterLink>
 
       <!-- Buscador central -->
-      <form class="search-form" role="search" @submit.prevent="handleSearch">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input v-model="searchQuery" type="search" class="search-input" placeholder="Buscar libros, autores, géneros…"
-          aria-label="Buscar en la biblioteca" />
-        <button type="submit" class="search-btn" aria-label="Buscar">Buscar</button>
-      </form>
+      <div class="search-container">
+        <form class="search-form" role="search" @submit.prevent="handleSearch">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input v-model="searchQuery" 
+                 @input="onSearchInput" 
+                 @focus="searchQuery.trim() && (showDropdown = true)" 
+                 @blur="closeDropdown" 
+                 type="search" class="search-input" placeholder="Buscar libros, autores, géneros…"
+                 aria-label="Buscar en la biblioteca" />
+          <button type="submit" class="search-btn" aria-label="Buscar">Buscar</button>
+        </form>
+
+        <!-- Dropdown predictivo -->
+        <div v-show="showDropdown" class="search-predictive-dropdown">
+          <div v-if="isSearching" class="predictive-msg">Buscando coincidencia rápida...</div>
+          <div v-else-if="searchResults.length === 0 && searchQuery.trim()" class="predictive-msg">
+            No se encontraron libros rápidos. Pulsa Enter para búsqueda exhaustiva.
+          </div>
+          <template v-else>
+            <div v-for="book in searchResults" :key="book.id" class="predictive-item" @click="goToBook(book.id)">
+              <div class="pi-cover">
+                <img v-if="book.portada" :src="book.portada" />
+                <span v-else>📖</span>
+              </div>
+              <div class="pi-info">
+                <h4>{{ book.titulo_es || book.titulo }}</h4>
+                <p>{{ book.autor }}</p>
+              </div>
+            </div>
+            <div class="predictive-footer" @click="handleSearch">
+              Ver todos los resultados ({{ searchQuery }})
+            </div>
+          </template>
+        </div>
+      </div>
 
       <!-- Acciones: login + hamburguesa + user menu -->
       <div class="header-actions">
@@ -106,6 +180,7 @@ const userInitial = computed(() => {
                 <span class="user-greeting">Hola, {{ authStore.user.username }}</span>
                 <span v-if="authStore.isAdmin" class="admin-badge">Admin</span>
               </div>
+              <RouterLink to="/favoritos" class="dropdown-link" @click="closeMenus">Mis Favoritos ★</RouterLink>
               <RouterLink to="/perfil" class="dropdown-link" @click="closeMenus">Configuración</RouterLink>
               <button class="dropdown-link logout-dropdown-btn" @click="handleLogout">Salir</button>
             </div>
@@ -203,7 +278,14 @@ const userInitial = computed(() => {
   font-weight: 700;
 }
 
-/* ─── Search form ─────────────────────────────────────────── */
+/* ─── Search form & Dropdown ──────────────────────────────── */
+.search-container {
+  position: relative;
+  flex: 0 1 1100px;
+  max-width: 1100px;
+  width: 100%;
+}
+
 .search-form {
   display: flex;
   align-items: center;
@@ -213,10 +295,8 @@ const userInitial = computed(() => {
   padding: 0 0.4rem 0 0.9rem;
   gap: 0.5rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  min-width: 0;
-  max-width: 1100px;
-  flex: 0 1 1100px;
   width: 100%;
+  min-width: 0;
 }
 
 .search-form:focus-within {
@@ -262,6 +342,88 @@ const userInitial = computed(() => {
 
 .search-btn:hover {
   color: #f0f2f7;
+}
+
+/* Dropdown predictivo */
+.search-predictive-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  background: #101219;
+  border: 1px solid #2d3348;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.predictive-msg {
+  padding: 1.2rem;
+  color: #97a0b7;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.predictive-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(45, 51, 72, 0.5);
+  transition: background 0.2s ease;
+}
+
+.predictive-item:hover {
+  background: rgba(237, 77, 77, 0.08);
+}
+
+.pi-cover {
+  width: 40px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #1e2030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.pi-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pi-info h4 {
+  margin: 0 0 0.25rem;
+  color: #f2f2f3;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.pi-info p {
+  margin: 0;
+  color: #8e95a8;
+  font-size: 0.8rem;
+}
+
+.predictive-footer {
+  padding: 0.75rem;
+  text-align: center;
+  color: #ed4d4d;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: rgba(237, 77, 77, 0.03);
+  transition: background 0.2s;
+}
+
+.predictive-footer:hover {
+  background: rgba(237, 77, 77, 0.1);
 }
 
 /* ─── Header actions ──────────────────────────────────────── */
