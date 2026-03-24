@@ -12,10 +12,10 @@
         <p>Una cookie es un pequeño archivo de texto, como un micro fragmento de pergamino, que nuestro servidor deposita en tu navegador web. No es magia negra, solo tecnología.</p>
         
         <h2>2. Las Cookies que Utilizamos</h2>
-        <p>En Librum Tenebris somos férreos defensores de la oscuridad digital. Por ello, <strong>solamente usamos una (1) cookie estrictamente necesaria</strong>. Esta cookie guarda de manera encriptada un token (cadena de letras) que valida que tú y nadie más eres el dueño de tu cuenta cuando accedes a "Mis Alquileres" o reservas un tomo.</p>
+        <p>En Librum Tenebris somos férreos defensores de la oscuridad digital. Por ello, <strong>solamente usamos una (1) cookie estrictamente necesaria</strong>. Esta cookie guarda de manera encriptada un token (cadena de letras) que valida que tú y nadie más eres el dueño de tu cuenta cuando accedes a "Mis Préstamos" o reservas un tomo.</p>
         
         <h2>3. Consentimiento y Seguridad</h2>
-        <p>Al ser esta cookie puramente técnica y obligatoria para que el sistema de alquiler funcione de manera segura y no se mezcle con otros usuarios, su uso no requiere de perfiles avanzados de marketing. Es indestructible y necesaria durante tu sesión. Al cerrar sesión, la cookie se esfumará.</p>
+        <p>Al ser esta cookie puramente técnica y obligatoria para que el sistema de préstamo funcione de manera segura y no se mezcle con otros usuarios, su uso no requiere de perfiles avanzados de marketing. Es indestructible y necesaria durante tu sesión. Al cerrar sesión, la cookie se esfumará.</p>
         
         <h2>4. Desactivación de Cookies</h2>
         <p>Si decides bloquear todas las cookies desde tu navegador medieval, serás repudiado por nuestros sistemas y no podrás añadir libros a tu reserva. Quedas advertido.</p>

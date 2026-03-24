@@ -11,7 +11,7 @@
         <h2>1. Aceptación de los Términos</h2>
         <p>Al acceder y utilizar el archivo de Librum Tenebris, usted acepta quedar vinculado al amparo de las reglas estipuladas. Si no está de acuerdo, le rogamos abandonar estas criptas virtuales.</p>
         
-        <h2>2. Uso del Servicio y Alquileres</h2>
+        <h2>2. Uso del Servicio y Préstamos</h2>
         <p>Los libros solicitados mediante el apartado de reservas digitales deben retirarse en nuestras tiendas físicas. El plazo oficial de penalización y/o cargos extra sólo dará comienzo cuando el administrador haga efectiva la marca comercial.</p>
         
         <h2>3. Propiedad Intelectual</h2>

@@ -186,8 +186,8 @@ const userInitial = computed(() => {
               <RouterLink to="/favoritos" class="dropdown-link dropdown-link-icon" @click="closeMenus">
                 Mis Favoritos <img :src="favoriteIcon" alt="Favoritos" class="dropdown-svg-icon" />
               </RouterLink>
-              <RouterLink to="/alquileres" class="dropdown-link dropdown-link-icon" @click="closeMenus">
-                Mis Alquileres <img :src="calendarIcon" alt="Calendar" class="dropdown-svg-icon" />
+              <RouterLink to="/prestamos" class="dropdown-link dropdown-link-icon" @click="closeMenus">
+                Mis Préstamos <img :src="calendarIcon" alt="Calendar" class="dropdown-svg-icon" />
               </RouterLink>
               <RouterLink to="/perfil" class="dropdown-link dropdown-link-icon" @click="closeMenus">
                 Configuración <img :src="settingsIcon" alt="Settings" class="dropdown-svg-icon" />
@@ -241,6 +241,8 @@ const userInitial = computed(() => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Germania+One&display=swap');
+
 /* ─── Sticky wrapper ──────────────────────────────────────── */
 .header-wrapper {
   position: sticky;
@@ -284,8 +286,10 @@ const userInitial = computed(() => {
 .brand-title {
   margin: 0;
   color: #f5f5f4;
-  font-size: 1rem;
-  font-weight: 700;
+  font-family: 'Germania One', cursive, serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
 }
 
 /* ─── Search form & Dropdown ──────────────────────────────── */

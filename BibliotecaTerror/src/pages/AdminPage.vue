@@ -89,31 +89,31 @@ const filteredBooks = computed(() => {
   })
 })
 
-// --- Lógica de Alquileres ---
-const alquileres = ref([])
-const alquileresLoading = ref(false)
-const alquileresError = ref(null)
+// --- Lógica de Préstamos ---
+const prestamos = ref([])
+const prestamosLoading = ref(false)
+const prestamosError = ref(null)
 
-const fetchAlquileres = async () => {
-  alquileresLoading.value = true
-  alquileresError.value = null
+const fetchPrestamos = async () => {
+  prestamosLoading.value = true
+  prestamosError.value = null
   try {
-    const res = await booksApi.getAllAlquileres()
-    alquileres.value = res.data.data || []
+    const res = await booksApi.getAllPrestamos()
+    prestamos.value = res.data.data || []
   } catch (err) {
-    console.error('Error cargando alquileres:', err)
-    alquileresError.value = 'No se pudo cargar el historial de alquileres.'
+    console.error('Error cargando préstamos:', err)
+    prestamosError.value = 'No se pudo cargar el historial de préstamos.'
   } finally {
-    alquileresLoading.value = false
+    prestamosLoading.value = false
   }
 }
 
-const alquileresSearchQuery = ref('')
+const prestamosSearchQuery = ref('')
 
-const filteredAlquileres = computed(() => {
-  if (!alquileresSearchQuery.value) return alquileres.value
-  const query = alquileresSearchQuery.value.toLowerCase()
-  return alquileres.value.filter(rent => {
+const filteredPrestamos = computed(() => {
+  if (!prestamosSearchQuery.value) return prestamos.value
+  const query = prestamosSearchQuery.value.toLowerCase()
+  return prestamos.value.filter(rent => {
     const userName = (rent.nombre_usuario || getUserName(rent.usuario_id)).toLowerCase()
     const bookTitle = rent.titulo ? rent.titulo.toLowerCase() : ''
     const rentId = String(rent.prestamo_id)
@@ -122,7 +122,7 @@ const filteredAlquileres = computed(() => {
 })
 
 /**
- * Filtra los campos dinámicos de los alquileres mapeando la ID del dueño contra 
+ * Filtra los campos dinámicos de los préstamos mapeando la ID del dueño contra 
  * el array `users` global para incrustar su nombre en la tabla. 
  */
 const getUserName = (userId) => {
@@ -148,11 +148,11 @@ const getDaysRemaining = (fechaDevolucion) => {
  * Modifica el estado comercial en la Base de Datos y actualiza la UI.
  * Si aprueba una entrega, anula la fecha esperada estableciendo una fija definitiva local.
  */
-const handleAlquilerStatusUpdate = async (rent, newStatus) => {
+const handlePrestamoStatusUpdate = async (rent, newStatus) => {
   const previousStatus = rent.estado
   try {
     rent.estado = newStatus
-    await booksApi.updateAlquilerStatus(rent.prestamo_id, newStatus)
+    await booksApi.updatePrestamoStatus(rent.prestamo_id, newStatus)
     if (newStatus === 'devuelto' || previousStatus === 'devuelto') {
       fetchBooks() // Resincroniza stock por el fondo
     }
@@ -167,13 +167,15 @@ watch(activeTab, (newTab) => {
   if (newTab === 'libros' && books.value.length === 0) {
     fetchBooks()
   }
-  if (newTab === 'alquileres' && alquileres.value.length === 0) {
-    fetchAlquileres()
+  if (newTab === 'prestamos' && prestamos.value.length === 0) {
+    fetchPrestamos()
   }
 })
 
 // --- Lógica del Modal Add Book ---
 const showModal = ref(false)
+const isEditing = ref(false)
+const currentEditId = ref(null)
 const savingBook = ref(false)
 const modalError = ref(null)
 const selectedFile = ref(null)
@@ -189,9 +191,27 @@ const emptyBook = () => ({
 const newBook = ref(emptyBook())
 
 const openModal = () => {
+  isEditing.value = false
+  currentEditId.value = null
   newBook.value = emptyBook()
   selectedFile.value = null
   previewUrl.value = null
+  modalError.value = null
+  showModal.value = true
+}
+
+const openEditModal = (book) => {
+  isEditing.value = true
+  currentEditId.value = book.id
+  newBook.value = {
+    google_id: book.google_id || '',
+    titulo: book.titulo_es || book.titulo || '',
+    autor: book.autor || '',
+    stock: book.stock || 1,
+    categoria: book.categoria || ''
+  }
+  selectedFile.value = null
+  previewUrl.value = book.portada || null
   modalError.value = null
   showModal.value = true
 }
@@ -209,7 +229,7 @@ const handleFileChange = (e) => {
 }
 
 const submitBook = async () => {
-  if (!selectedFile.value) {
+  if (!isEditing.value && !selectedFile.value) {
     modalError.value = 'Debes subir una portada.'
     return
   }
@@ -222,15 +242,25 @@ const submitBook = async () => {
   modalError.value = null
 
   const formData = new FormData()
+  if (isEditing.value) {
+    formData.append('id', currentEditId.value)
+  }
   formData.append('google_id', newBook.value.google_id)
   formData.append('titulo', newBook.value.titulo)
   formData.append('autor', newBook.value.autor)
   formData.append('categoria', newBook.value.categoria)
   formData.append('stock', newBook.value.stock)
-  formData.append('portada', selectedFile.value)
+  
+  if (selectedFile.value) {
+    formData.append('portada', selectedFile.value)
+  }
 
   try {
-    await booksApi.createBook(formData)
+    if (isEditing.value) {
+      await booksApi.updateBook(formData)
+    } else {
+      await booksApi.createBook(formData)
+    }
     closeModal()
     fetchBooks() // Refrescar lista!
   } catch(err) {
@@ -270,10 +300,10 @@ onMounted(() => {
           <img :src="bookIcon" class="tab-icon-img" alt="Inventario" /> Inventario
         </button>
         <button 
-          :class="['tab-btn', { active: activeTab === 'alquileres' }]" 
-          @click="activeTab = 'alquileres'"
+          :class="['tab-btn', { active: activeTab === 'prestamos' }]" 
+          @click="activeTab = 'prestamos'"
         >
-          <img :src="calendarIcon" class="tab-icon-img" alt="Alquileres" /> Alquileres
+          <img :src="calendarIcon" class="tab-icon-img" alt="Préstamos" /> Préstamos
         </button>
       </div>
     </div>
@@ -374,6 +404,7 @@ onMounted(() => {
               <th>Autor</th>
               <th>Stock</th>
               <th>Disponibilidad</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -389,29 +420,32 @@ onMounted(() => {
                   {{ book.stock > 0 ? 'Disponible' : 'Agotado' }}
                 </span>
               </td>
+              <td class="cell-role">
+                <button class="add-btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" @click="openEditModal(book)">Editar</button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- =============== PESTAÑA: ALQUILERES =============== -->
-    <div v-show="activeTab === 'alquileres'">
-      <div v-if="alquileresLoading" class="state-container">
+    <!-- =============== PESTAÑA: PRÉSTAMOS =============== -->
+    <div v-show="activeTab === 'prestamos'">
+      <div v-if="prestamosLoading" class="state-container">
         <div class="spinner"></div>
-        <p>Cargando alquileres...</p>
+        <p>Cargando préstamos...</p>
       </div>
 
-      <div v-else-if="alquileresError" class="state-container error-state">
-        <p>{{ alquileresError }}</p>
-        <button @click="fetchAlquileres" class="retry-btn">Reintentar</button>
+      <div v-else-if="prestamosError" class="state-container error-state">
+        <p>{{ prestamosError }}</p>
+        <button @click="fetchPrestamos" class="retry-btn">Reintentar</button>
       </div>
 
       <div v-else class="table-container">
         <div class="search-bar-container">
           <input 
             type="search" 
-            v-model="alquileresSearchQuery" 
+            v-model="prestamosSearchQuery" 
             placeholder="Buscar por usuario, libro o ID..." 
             class="admin-search-input"
           />
@@ -427,7 +461,7 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="rent in filteredAlquileres" :key="rent.prestamo_id">
+            <tr v-for="rent in filteredPrestamos" :key="rent.prestamo_id">
               <td class="cell-id">#{{ rent.prestamo_id }}</td>
               <td class="cell-user">
                 <strong>{{ rent.nombre_usuario || getUserName(rent.usuario_id) }}</strong>
@@ -455,13 +489,13 @@ onMounted(() => {
                   
                   <button 
                     v-if="rent.estado === 'pendiente'" 
-                    @click="handleAlquilerStatusUpdate(rent, 'activo')"
+                    @click="handlePrestamoStatusUpdate(rent, 'activo')"
                     class="btn-activate"
                   >Activar</button>
 
                   <button 
                     v-if="rent.estado === 'activo'" 
-                    @click="handleAlquilerStatusUpdate(rent, 'devuelto')"
+                    @click="handlePrestamoStatusUpdate(rent, 'devuelto')"
                     class="btn-return"
                   >Devolver</button>
                 </div>
@@ -475,7 +509,7 @@ onMounted(() => {
     <!-- =============== MODAL AÑADIR LIBRO =============== -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
-        <h2>Añadir Nuevo Libro</h2>
+        <h2>{{ isEditing ? 'Editar Libro' : 'Añadir Nuevo Libro' }}</h2>
         <div v-if="modalError" class="modal-error">{{ modalError }}</div>
         
         <form @submit.prevent="submitBook" class="book-form">
@@ -520,7 +554,7 @@ onMounted(() => {
           <div class="modal-actions">
             <button type="button" class="cancel-btn" @click="closeModal" :disabled="savingBook">Cancelar</button>
             <button type="submit" class="save-btn" :disabled="savingBook">
-              {{ savingBook ? 'Guardando...' : 'Guardar Libro' }}
+              {{ savingBook ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Guardar Libro') }}
             </button>
           </div>
         </form>

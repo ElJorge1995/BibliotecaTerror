@@ -17,11 +17,11 @@ const fetchRentals = async () => {
   error.value = null
   
   try {
-    const res = await booksApi.getMisAlquileres(authStore.user.id)
+    const res = await booksApi.getMisPrestamos(authStore.user.id)
     rentals.value = res.data.data || []
   } catch(err) {
     console.error(err)
-    error.value = 'No hemos podido cargar tus alquileres'
+    error.value = 'No hemos podido cargar tus préstamos'
   } finally {
     loading.value = false
   }
@@ -50,7 +50,7 @@ const rateBook = async (rent, star) => {
   if (rent.tu_rating) return // Evita múltiples votos si ya está votado
   try {
     rent.isRating = true
-    await booksApi.valorarAlquiler(rent.prestamo_id, star)
+    await booksApi.valorarPrestamo(rent.prestamo_id, star)
     rent.tu_rating = star
   } catch(e) {
     console.error('Error al valorar', e)
@@ -65,7 +65,7 @@ const rateBook = async (rent, star) => {
   <div class="rentals-page">
     <header class="rentals-header">
       <div class="header-content">
-        <h1>Mis Alquileres</h1>
+        <h1>Mis Préstamos</h1>
         <p>Controla los libros que tienes actualmente reservados y sus fechas límite.</p>
       </div>
     </header>
@@ -86,7 +86,7 @@ const rateBook = async (rent, star) => {
       <!-- Empty State -->
       <div v-else-if="rentals.length === 0" class="empty-state">
         <div class="empty-icon">📅</div>
-        <h2>Aún no has alquilado ningún libro</h2>
+        <h2>Aún no has pedido prestado ningún libro</h2>
         <p>Explora nuestro catálogo y reserva tu primer volumen hoy mismo.</p>
         <button class="explore-btn" @click="router.push('/')">Explorar Biblioteca</button>
       </div>
@@ -109,7 +109,7 @@ const rateBook = async (rent, star) => {
             
             <div class="rental-meta">
                <div class="meta-row">
-                 <span class="meta-label">Alquilado el:</span>
+                 <span class="meta-label">Prestado el:</span>
                  <span class="meta-value">{{ formatDate(rent.fecha_prestamo) }}</span>
                </div>
                <div class="meta-row highlight-row">

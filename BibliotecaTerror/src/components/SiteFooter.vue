@@ -61,6 +61,8 @@ const currentYear = new Date().getFullYear()
         <RouterLink to="/privacidad">Privacidad</RouterLink>
         <span class="separator">·</span>
         <RouterLink to="/cookies">Cookies</RouterLink>
+        <span class="separator">·</span>
+        <RouterLink to="/accesibilidad">Accesibilidad</RouterLink>
       </div>
     </div>
   </footer>
