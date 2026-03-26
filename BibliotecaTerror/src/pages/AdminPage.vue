@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import authApi from '../api/auth'
 import booksApi from '../api/books.js'
 import { useAuthStore } from '../stores/auth'
@@ -16,7 +16,7 @@ const activeTab = ref('usuarios')
 const users = ref([])
 const loading = ref(true)
 const error = ref(null)
-const searchQuery = ref('')
+const usersSearchQuery = ref('')
 
 const fetchUsers = async () => {
   loading.value = true
@@ -50,12 +50,13 @@ const formatDate = (dateString) => {
 }
 
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) return users.value
-  const query = searchQuery.value.toLowerCase()
+  if (!usersSearchQuery.value) return users.value
+  const query = usersSearchQuery.value.toLowerCase()
   return users.value.filter(user => {
     return (user.name && user.name.toLowerCase().includes(query)) ||
-           (user.username && user.username.toLowerCase().includes(query)) ||
-           (user.email && user.email.toLowerCase().includes(query))
+      (user.username && user.username.toLowerCase().includes(query)) ||
+      (user.email && user.email.toLowerCase().includes(query)) ||
+      (user.dni && user.dni.toLowerCase().includes(query))
   })
 })
 
@@ -84,36 +85,36 @@ const filteredBooks = computed(() => {
   const query = booksSearchQuery.value.toLowerCase()
   return books.value.filter(book => {
     return (book.titulo && book.titulo.toLowerCase().includes(query)) ||
-           (book.titulo_es && book.titulo_es.toLowerCase().includes(query)) ||
-           (book.autor && book.autor.toLowerCase().includes(query))
+      (book.titulo_es && book.titulo_es.toLowerCase().includes(query)) ||
+      (book.autor && book.autor.toLowerCase().includes(query))
   })
 })
 
-// --- Lógica de Alquileres ---
-const alquileres = ref([])
-const alquileresLoading = ref(false)
-const alquileresError = ref(null)
+// --- Lógica de Préstamos ---
+const prestamos = ref([])
+const prestamosLoading = ref(false)
+const prestamosError = ref(null)
 
-const fetchAlquileres = async () => {
-  alquileresLoading.value = true
-  alquileresError.value = null
+const fetchPrestamos = async () => {
+  prestamosLoading.value = true
+  prestamosError.value = null
   try {
-    const res = await booksApi.getAllAlquileres()
-    alquileres.value = res.data.data || []
+    const res = await booksApi.getAllPrestamos()
+    prestamos.value = res.data.data || []
   } catch (err) {
-    console.error('Error cargando alquileres:', err)
-    alquileresError.value = 'No se pudo cargar el historial de alquileres.'
+    console.error('Error cargando préstamos:', err)
+    prestamosError.value = 'No se pudo cargar el historial de préstamos.'
   } finally {
-    alquileresLoading.value = false
+    prestamosLoading.value = false
   }
 }
 
-const alquileresSearchQuery = ref('')
+const prestamosSearchQuery = ref('')
 
-const filteredAlquileres = computed(() => {
-  if (!alquileresSearchQuery.value) return alquileres.value
-  const query = alquileresSearchQuery.value.toLowerCase()
-  return alquileres.value.filter(rent => {
+const filteredPrestamos = computed(() => {
+  if (!prestamosSearchQuery.value) return prestamos.value
+  const query = prestamosSearchQuery.value.toLowerCase()
+  return prestamos.value.filter(rent => {
     const userName = (rent.nombre_usuario || getUserName(rent.usuario_id)).toLowerCase()
     const bookTitle = rent.titulo ? rent.titulo.toLowerCase() : ''
     const rentId = String(rent.prestamo_id)
@@ -122,7 +123,7 @@ const filteredAlquileres = computed(() => {
 })
 
 /**
- * Filtra los campos dinámicos de los alquileres mapeando la ID del dueño contra 
+ * Filtra los campos dinámicos de los préstamos mapeando la ID del dueño contra 
  * el array `users` global para incrustar su nombre en la tabla. 
  */
 const getUserName = (userId) => {
@@ -148,15 +149,15 @@ const getDaysRemaining = (fechaDevolucion) => {
  * Modifica el estado comercial en la Base de Datos y actualiza la UI.
  * Si aprueba una entrega, anula la fecha esperada estableciendo una fija definitiva local.
  */
-const handleAlquilerStatusUpdate = async (rent, newStatus) => {
+const handlePrestamoStatusUpdate = async (rent, newStatus) => {
   const previousStatus = rent.estado
   try {
     rent.estado = newStatus
-    await booksApi.updateAlquilerStatus(rent.prestamo_id, newStatus)
+    await booksApi.updatePrestamoStatus(rent.prestamo_id, newStatus)
     if (newStatus === 'devuelto' || previousStatus === 'devuelto') {
       fetchBooks() // Resincroniza stock por el fondo
     }
-  } catch(err) {
+  } catch (err) {
     rent.estado = previousStatus
     console.error(err)
     alert('Error al actualizar el estado del préstamo.')
@@ -167,13 +168,144 @@ watch(activeTab, (newTab) => {
   if (newTab === 'libros' && books.value.length === 0) {
     fetchBooks()
   }
-  if (newTab === 'alquileres' && alquileres.value.length === 0) {
-    fetchAlquileres()
+  if (newTab === 'prestamos' && prestamos.value.length === 0) {
+    fetchPrestamos()
   }
 })
 
+const showUserModal = ref(false)
+const userLoading = ref(false)
+const userError = ref(null)
+const userData = reactive({
+  name: '',
+  username: '',
+  email: '',
+  dni: '',
+  password: '',
+  role: 'user'
+})
+
+const openUserModal = () => {
+  userData.name = ''
+  userData.username = ''
+  userData.email = ''
+  userData.dni = ''
+  userData.password = ''
+  userData.role = 'user'
+  userError.value = null
+  showUserModal.value = true
+}
+
+const handleAdminRegister = async () => {
+  userLoading.value = true
+  userError.value = null
+  try {
+    await authApi.adminRegister(userData)
+    showUserModal.value = false
+    fetchUsers()
+  } catch (err) {
+    console.error(err)
+    userError.value = err.response?.data?.error || 'Error al registrar al usuario.'
+  } finally {
+    userLoading.value = false
+  }
+}
+
+// --- Lógica del Borrado de Usuario ---
+const showDeleteModal = ref(false)
+const userToDelete = ref(null)
+const deleteLoading = ref(false)
+const deleteError = ref(null)
+
+const confirmDeleteUser = (user) => {
+  if (user.role === 'admin') {
+    alert('No se puede eliminar a un administrador desde aquí por seguridad.')
+    return
+  }
+  userToDelete.value = user
+  deleteError.value = null
+  showDeleteModal.value = true
+}
+
+const handleAdminDelete = async () => {
+  if (!userToDelete.value) return
+  deleteLoading.value = true
+  deleteError.value = null
+  try {
+    await authApi.adminDeleteUser(userToDelete.value.id)
+    showDeleteModal.value = false
+    userToDelete.value = null
+    fetchUsers()
+  } catch (err) {
+    console.error(err)
+    deleteError.value = err.response?.data?.error || 'Error al eliminar al usuario.'
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+// --- Lógica del Modal Nuevo Préstamo ---
+const showPrestamoModal = ref(false)
+const prestamoLoading = ref(false)
+const prestamoError = ref(null)
+const prestamoData = reactive({
+  dni: '',
+  libro_titulo: '',
+  fecha_devolucion: ''
+})
+
+const showBookSuggestions = ref(false)
+
+const filteredBookSuggestions = computed(() => {
+  const query = prestamoData.libro_titulo.toLowerCase().trim()
+  if (!query) return []
+  return books.value
+    .filter(book => (book.titulo_es || book.titulo).toLowerCase().includes(query))
+    .slice(0, 5)
+})
+
+const openPrestamoModal = () => {
+  if (books.value.length === 0) {
+    fetchBooks()
+  }
+  prestamoData.dni = ''
+  prestamoData.libro_titulo = ''
+  prestamoData.fecha_devolucion = ''
+  prestamoError.value = null
+  showPrestamoModal.value = true
+  showBookSuggestions.value = false
+}
+
+const selectBookSuggestion = (title) => {
+  prestamoData.libro_titulo = title
+  showBookSuggestions.value = false
+}
+
+const handleCreatePrestamo = async () => {
+  if (!prestamoData.dni || !prestamoData.libro_titulo) return
+
+  prestamoLoading.value = true
+  prestamoError.value = null
+
+  try {
+    const payload = { ...prestamoData }
+    if (!payload.fecha_devolucion) delete payload.fecha_devolucion
+
+    await booksApi.adminCrearPrestamo(payload)
+    showPrestamoModal.value = false
+    fetchPrestamos() // Refrescar lista
+  } catch (err) {
+    console.error(err)
+    prestamoError.value = err.response?.data?.error || 'Error al crear el préstamo.'
+  } finally {
+    prestamoLoading.value = false
+  }
+}
+
 // --- Lógica del Modal Add Book ---
 const showModal = ref(false)
+const isEditing = ref(false)
+const currentEditId = ref(null)
 const savingBook = ref(false)
 const modalError = ref(null)
 const selectedFile = ref(null)
@@ -189,9 +321,27 @@ const emptyBook = () => ({
 const newBook = ref(emptyBook())
 
 const openModal = () => {
+  isEditing.value = false
+  currentEditId.value = null
   newBook.value = emptyBook()
   selectedFile.value = null
   previewUrl.value = null
+  modalError.value = null
+  showModal.value = true
+}
+
+const openEditModal = (book) => {
+  isEditing.value = true
+  currentEditId.value = book.id
+  newBook.value = {
+    google_id: book.google_id || '',
+    titulo: book.titulo_es || book.titulo || '',
+    autor: book.autor || '',
+    stock: book.stock || 1,
+    categoria: book.categoria || ''
+  }
+  selectedFile.value = null
+  previewUrl.value = book.portada || null
   modalError.value = null
   showModal.value = true
 }
@@ -209,7 +359,7 @@ const handleFileChange = (e) => {
 }
 
 const submitBook = async () => {
-  if (!selectedFile.value) {
+  if (!isEditing.value && !selectedFile.value) {
     modalError.value = 'Debes subir una portada.'
     return
   }
@@ -222,18 +372,28 @@ const submitBook = async () => {
   modalError.value = null
 
   const formData = new FormData()
+  if (isEditing.value) {
+    formData.append('id', currentEditId.value)
+  }
   formData.append('google_id', newBook.value.google_id)
   formData.append('titulo', newBook.value.titulo)
   formData.append('autor', newBook.value.autor)
   formData.append('categoria', newBook.value.categoria)
   formData.append('stock', newBook.value.stock)
-  formData.append('portada', selectedFile.value)
+
+  if (selectedFile.value) {
+    formData.append('portada', selectedFile.value)
+  }
 
   try {
-    await booksApi.createBook(formData)
+    if (isEditing.value) {
+      await booksApi.updateBook(formData)
+    } else {
+      await booksApi.createBook(formData)
+    }
     closeModal()
     fetchBooks() // Refrescar lista!
-  } catch(err) {
+  } catch (err) {
     console.error(err)
     modalError.value = err.response?.data?.error || 'Error al guardar el libro.'
   } finally {
@@ -254,26 +414,17 @@ onMounted(() => {
     <div class="admin-header">
       <h1 class="admin-title">Panel de Administración</h1>
       <p class="admin-subtitle">Gestiona los usuarios y el inventario de libros de la biblioteca.</p>
-      
+
       <!-- Navegación por pestañas -->
       <div class="admin-tabs">
-        <button 
-          :class="['tab-btn', { active: activeTab === 'usuarios' }]" 
-          @click="activeTab = 'usuarios'"
-        >
+        <button :class="['tab-btn', { active: activeTab === 'usuarios' }]" @click="activeTab = 'usuarios'">
           <img :src="personIcon" class="tab-icon-img" alt="Usuarios" /> Usuarios
         </button>
-        <button 
-          :class="['tab-btn', { active: activeTab === 'libros' }]" 
-          @click="activeTab = 'libros'"
-        >
+        <button :class="['tab-btn', { active: activeTab === 'libros' }]" @click="activeTab = 'libros'">
           <img :src="bookIcon" class="tab-icon-img" alt="Inventario" /> Inventario
         </button>
-        <button 
-          :class="['tab-btn', { active: activeTab === 'alquileres' }]" 
-          @click="activeTab = 'alquileres'"
-        >
-          <img :src="calendarIcon" class="tab-icon-img" alt="Alquileres" /> Alquileres
+        <button :class="['tab-btn', { active: activeTab === 'prestamos' }]" @click="activeTab = 'prestamos'">
+          <img :src="calendarIcon" class="tab-icon-img" alt="Préstamos" /> Préstamos
         </button>
       </div>
     </div>
@@ -291,13 +442,12 @@ onMounted(() => {
       </div>
 
       <div v-else class="table-container">
-        <div class="search-bar-container">
-          <input 
-            type="search" 
-            v-model="searchQuery" 
-            placeholder="Buscar por nombre, usuario o email..." 
-            class="admin-search-input"
-          />
+        <div class="search-bar-container actions-bar">
+          <input type="search" v-model="usersSearchQuery" placeholder="Buscar por nombre, email o DNI..."
+            class="admin-search-input" />
+          <button class="add-btn" @click="openUserModal">
+            <span class="plus-icon">+</span> Nuevo Usuario
+          </button>
         </div>
         <table class="users-table">
           <thead>
@@ -305,37 +455,43 @@ onMounted(() => {
               <th>ID</th>
               <th>Usuario</th>
               <th>Email</th>
+              <th>DNI</th>
               <th>Verificado</th>
               <th>Rol</th>
-              <th>Registro</th>
+              <th>Fecha Registro</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="user in filteredUsers" :key="user.id">
               <td class="cell-id">#{{ user.id }}</td>
               <td class="cell-user">
-                <strong>{{ user.username }}</strong>
-                <span class="full-name">{{ user.name }}</span>
+                <div class="user-info">
+                  <strong>{{ user.username }}</strong>
+                  <span class="full-name">{{ user.name }}</span>
+                </div>
               </td>
               <td class="cell-email">{{ user.email }}</td>
+              <td class="cell-dni">{{ user.dni || '-' }}</td>
               <td class="cell-verified">
                 <span :class="['badge', user.is_email_verified ? 'badge-success' : 'badge-warning']">
                   {{ user.is_email_verified ? 'Sí' : 'No' }}
                 </span>
               </td>
               <td class="cell-role">
-                <select 
-                  v-model="user.role" 
-                  @change="handleRoleChange(user, $event.target.value)"
-                  class="role-select"
-                  :disabled="user.id === authStore.user?.id"
-                >
+                <select v-model="user.role" @change="handleRoleChange(user, $event.target.value)" class="role-select"
+                  :disabled="user.id === authStore.user?.id">
                   <option value="user">Usuario (User)</option>
                   <option value="pro">Premium (Pro)</option>
                   <option value="admin">Administrador (Admin)</option>
                 </select>
               </td>
               <td class="cell-date">{{ formatDate(user.created_at) }}</td>
+              <td>
+                <button class="delete-btn-table-text" title="Dar de baja" @click="confirmDeleteUser(user)">
+                  Dar de baja
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -356,12 +512,8 @@ onMounted(() => {
 
       <div v-else class="table-container">
         <div class="search-bar-container actions-bar">
-          <input 
-            type="search" 
-            v-model="booksSearchQuery" 
-            placeholder="Buscar por título o autor..." 
-            class="admin-search-input"
-          />
+          <input type="search" v-model="booksSearchQuery" placeholder="Buscar por título o autor..."
+            class="admin-search-input" />
           <button class="add-btn" @click="openModal">
             <span class="plus-icon">+</span> Añadir Libro
           </button>
@@ -374,6 +526,7 @@ onMounted(() => {
               <th>Autor</th>
               <th>Stock</th>
               <th>Disponibilidad</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -389,32 +542,35 @@ onMounted(() => {
                   {{ book.stock > 0 ? 'Disponible' : 'Agotado' }}
                 </span>
               </td>
+              <td class="cell-role">
+                <button class="add-btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                  @click="openEditModal(book)">Editar</button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- =============== PESTAÑA: ALQUILERES =============== -->
-    <div v-show="activeTab === 'alquileres'">
-      <div v-if="alquileresLoading" class="state-container">
+    <!-- =============== PESTAÑA: PRÉSTAMOS =============== -->
+    <div v-show="activeTab === 'prestamos'">
+      <div v-if="prestamosLoading" class="state-container">
         <div class="spinner"></div>
-        <p>Cargando alquileres...</p>
+        <p>Cargando préstamos...</p>
       </div>
 
-      <div v-else-if="alquileresError" class="state-container error-state">
-        <p>{{ alquileresError }}</p>
-        <button @click="fetchAlquileres" class="retry-btn">Reintentar</button>
+      <div v-else-if="prestamosError" class="state-container error-state">
+        <p>{{ prestamosError }}</p>
+        <button @click="fetchPrestamos" class="retry-btn">Reintentar</button>
       </div>
 
       <div v-else class="table-container">
-        <div class="search-bar-container">
-          <input 
-            type="search" 
-            v-model="alquileresSearchQuery" 
-            placeholder="Buscar por usuario, libro o ID..." 
-            class="admin-search-input"
-          />
+        <div class="search-bar-container actions-bar">
+          <input type="search" v-model="prestamosSearchQuery" placeholder="Buscar por usuario, libro o ID..."
+            class="admin-search-input" />
+          <button class="add-btn" @click="openPrestamoModal">
+            <span class="plus-icon">+</span> Nuevo Préstamo
+          </button>
         </div>
         <table class="users-table">
           <thead>
@@ -427,24 +583,21 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="rent in filteredAlquileres" :key="rent.prestamo_id">
+            <tr v-for="rent in filteredPrestamos" :key="rent.prestamo_id">
               <td class="cell-id">#{{ rent.prestamo_id }}</td>
               <td class="cell-user">
                 <strong>{{ rent.nombre_usuario || getUserName(rent.usuario_id) }}</strong>
               </td>
               <td class="cell-email">{{ rent.titulo }}</td>
               <td class="cell-verified">
-                <span 
-                  class="badge" 
-                  :class="{
-                    'badge-success': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'number' && getDaysRemaining(rent.fecha_devolucion) >= 0,
-                    'badge-danger': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'number' && getDaysRemaining(rent.fecha_devolucion) < 0,
-                    'badge-warning': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'string',
-                    'badge-returned': rent.estado === 'devuelto'
-                  }" 
-                  style="font-size: 0.9rem; padding: 0.4rem 0.8rem;"
-                >
-                   {{ rent.estado === 'devuelto' ? 'DEVUELTO' : getDaysRemaining(rent.fecha_devolucion) + (typeof getDaysRemaining(rent.fecha_devolucion) === 'number' ? ' días' : '') }}
+                <span class="badge" :class="{
+                  'badge-success': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'number' && getDaysRemaining(rent.fecha_devolucion) >= 0,
+                  'badge-danger': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'number' && getDaysRemaining(rent.fecha_devolucion) < 0,
+                  'badge-warning': rent.estado !== 'devuelto' && typeof getDaysRemaining(rent.fecha_devolucion) === 'string',
+                  'badge-returned': rent.estado === 'devuelto'
+                }" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+                  {{ rent.estado === 'devuelto' ? 'DEVUELTO' : getDaysRemaining(rent.fecha_devolucion) + (typeof
+                    getDaysRemaining(rent.fecha_devolucion) === 'number' ? ' días' : '') }}
                 </span>
               </td>
               <td class="cell-role">
@@ -452,18 +605,12 @@ onMounted(() => {
                   <div v-if="rent.estado === 'devuelto'" class="return-date-text">
                     {{ rent.fecha_entregado ? 'Devuelto el ' + formatDate(rent.fecha_entregado) : 'Desconocida' }}
                   </div>
-                  
-                  <button 
-                    v-if="rent.estado === 'pendiente'" 
-                    @click="handleAlquilerStatusUpdate(rent, 'activo')"
-                    class="btn-activate"
-                  >Activar</button>
 
-                  <button 
-                    v-if="rent.estado === 'activo'" 
-                    @click="handleAlquilerStatusUpdate(rent, 'devuelto')"
-                    class="btn-return"
-                  >Devolver</button>
+                  <button v-if="rent.estado === 'pendiente'" @click="handlePrestamoStatusUpdate(rent, 'activo')"
+                    class="btn-activate">Activar</button>
+
+                  <button v-if="rent.estado === 'activo'" @click="handlePrestamoStatusUpdate(rent, 'devuelto')"
+                    class="btn-return">Devolver</button>
                 </div>
               </td>
             </tr>
@@ -472,12 +619,130 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- =============== MODAL NUEVO PRÉSTAMO =============== -->
+    <div v-if="showPrestamoModal" class="modal-overlay" @click.self="showPrestamoModal = false">
+      <div class="modal-content">
+        <h2>Crear Nuevo Préstamo</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">Crea un préstamo directo asociando el DNI
+          del usuario y el título exacto del libro.</p>
+
+        <div v-if="prestamoError" class="modal-error">{{ prestamoError }}</div>
+
+        <form @submit.prevent="handleCreatePrestamo" class="book-form">
+          <div class="form-grid">
+            <div class="input-group">
+              <label>DNI del Usuario</label>
+              <input type="text" v-model="prestamoData.dni" required placeholder="Ej. 12345678X" />
+            </div>
+            <div class="input-group relative">
+              <label>Título del Libro</label>
+              <input type="text" v-model="prestamoData.libro_titulo" required placeholder="Ej. El Resplandor"
+                @focus="showBookSuggestions = true" @blur="setTimeout(() => showBookSuggestions = false, 200)" />
+              <!-- Sugerencias -->
+              <ul v-if="showBookSuggestions && filteredBookSuggestions.length > 0" class="suggestions-list">
+                <li v-for="book in filteredBookSuggestions" :key="book.id"
+                  @click="selectBookSuggestion(book.titulo_es || book.titulo)">
+                  {{ book.titulo_es || book.titulo }}
+                </li>
+              </ul>
+            </div>
+            <div class="input-group">
+              <label>Fecha de Devolución (Opcional)</label>
+              <input type="date" v-model="prestamoData.fecha_devolucion"
+                :min="new Date().toISOString().split('T')[0]" />
+              <small style="color: #64748b; margin-top: 0.3rem;">Por defecto: +15 días.</small>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn" @click="showPrestamoModal = false"
+              :disabled="prestamoLoading">Cancelar</button>
+            <button type="submit" class="save-btn" :disabled="prestamoLoading">
+              {{ prestamoLoading ? 'Creando...' : 'Crear Préstamo' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =============== MODAL NUEVO USUARIO =============== -->
+    <div v-if="showUserModal" class="modal-overlay" @click.self="showUserModal = false">
+      <div class="modal-content">
+        <h2>Registrar Nuevo Usuario</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">Crea una cuenta de usuario directamente sin
+          verificación de email.</p>
+
+        <div v-if="userError" class="modal-error">{{ userError }}</div>
+
+        <form @submit.prevent="handleAdminRegister" class="book-form">
+          <div class="form-grid">
+            <div class="input-group">
+              <label>Nombre Completo</label>
+              <input type="text" v-model="userData.name" required placeholder="Ej. Juan Pérez" />
+            </div>
+            <div class="input-group">
+              <label>Nombre de Usuario (Nick)</label>
+              <input type="text" v-model="userData.username" required placeholder="Ej. jperez123" />
+            </div>
+            <div class="input-group">
+              <label>Correo Electrónico</label>
+              <input type="email" v-model="userData.email" required placeholder="juan@ejemplo.com" />
+            </div>
+            <div class="input-group">
+              <label>DNI</label>
+              <input type="text" v-model="userData.dni" required placeholder="12345678X" />
+            </div>
+            <div class="input-group">
+              <label>Contraseña Provisional</label>
+              <input type="password" v-model="userData.password" required placeholder="Mín. 6 caracteres" />
+            </div>
+            <div class="input-group">
+              <label>Rol del Usuario</label>
+              <select v-model="userData.role" class="role-select" style="width: 100%; height: 42px;">
+                <option value="user">Lector (Estándar)</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn" @click="showUserModal = false"
+              :disabled="userLoading">Cancelar</button>
+            <button type="submit" class="save-btn" :disabled="userLoading">
+              {{ userLoading ? 'Registrando...' : 'Registrar Usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =============== MODAL CONFIRMAR BORRADO =============== -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
+      <div class="modal-content delete-modal">
+        <h2 class="danger-title">¿Dar de baja usuario?</h2>
+        <div class="warning-box">
+          <p>Estás a punto de eliminar permanentemente la cuenta de:</p>
+          <strong class="user-to-del">{{ userToDelete?.name }} ({{ userToDelete?.email }})</strong>
+          <p class="warning-text">Esta acción no se puede deshacer y el usuario perderá todo acceso.</p>
+        </div>
+
+        <div v-if="deleteError" class="modal-error">{{ deleteError }}</div>
+
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showDeleteModal = false" :disabled="deleteLoading">Cancelar</button>
+          <button class="save-btn delete-confirm-btn" @click="handleAdminDelete" :disabled="deleteLoading">
+            {{ deleteLoading ? 'Eliminando...' : 'Confirmar Baja' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- =============== MODAL AÑADIR LIBRO =============== -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
-        <h2>Añadir Nuevo Libro</h2>
+        <h2>{{ isEditing ? 'Editar Libro' : 'Añadir Nuevo Libro' }}</h2>
         <div v-if="modalError" class="modal-error">{{ modalError }}</div>
-        
+
         <form @submit.prevent="submitBook" class="book-form">
           <div class="form-grid">
             <div class="input-group">
@@ -501,12 +766,13 @@ onMounted(() => {
               <input type="number" v-model.number="newBook.stock" required min="1" />
             </div>
           </div>
-          
+
           <!-- Subida de imagen -->
           <div class="file-upload-section">
             <label class="file-label">Portada del Libro (Imagen)</label>
             <div class="upload-area">
-              <input type="file" accept="image/*" @change="handleFileChange" id="coverUpload" class="hidden-file-input" />
+              <input type="file" accept="image/*" @change="handleFileChange" id="coverUpload"
+                class="hidden-file-input" />
               <label for="coverUpload" class="upload-box" :class="{ 'has-image': previewUrl }">
                 <div v-if="!previewUrl" class="upload-placeholder">
                   <span>📸</span>
@@ -516,11 +782,11 @@ onMounted(() => {
               </label>
             </div>
           </div>
-          
+
           <div class="modal-actions">
             <button type="button" class="cancel-btn" @click="closeModal" :disabled="savingBook">Cancelar</button>
             <button type="submit" class="save-btn" :disabled="savingBook">
-              {{ savingBook ? 'Guardando...' : 'Guardar Libro' }}
+              {{ savingBook ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Guardar Libro') }}
             </button>
           </div>
         </form>
@@ -625,9 +891,10 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 4rem 2rem;
-  background: #11141e;
+  background: rgba(17, 20, 30, 0.4);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  border: 1px solid #1f2335;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: #97a0b7;
   margin-top: 1.5rem;
 }
@@ -648,6 +915,7 @@ onMounted(() => {
   cursor: pointer;
   font-weight: bold;
 }
+
 .retry-btn:hover {
   background: #d64242;
 }
@@ -663,14 +931,17 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .table-container {
   overflow-x: auto;
-  background: #11141e;
+  background: rgba(17, 20, 30, 0.4);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  border: 1px solid #1f2335;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   margin-top: 1.5rem;
 }
@@ -683,8 +954,9 @@ onMounted(() => {
 
 .users-table th,
 .users-table td {
-  padding: 1rem 1.2rem;
+  padding: 0.6rem 0.5rem;
   border-bottom: 1px solid #1f2335;
+  font-size: 0.8rem;
 }
 
 .search-bar-container {
@@ -729,14 +1001,15 @@ onMounted(() => {
 .users-table tbody tr {
   transition: background 0.2s;
 }
+
 .users-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
 .cell-id {
   color: #5c6480;
-  font-size: 0.9rem;
-  width: 60px;
+  font-size: 0.85rem;
+  width: 50px;
 }
 
 .font-bold {
@@ -763,7 +1036,10 @@ onMounted(() => {
 
 .cell-email {
   color: #97a0b7;
-  font-size: 0.9rem;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .badge {
@@ -773,21 +1049,25 @@ onMounted(() => {
   font-weight: 700;
   text-transform: uppercase;
 }
+
 .badge-success {
   background: rgba(34, 197, 94, 0.15);
   color: #4ade80;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
+
 .badge-danger {
   background: rgba(237, 77, 77, 0.15);
   color: #ed4d4d;
   border-color: rgba(237, 77, 77, 0.4);
 }
+
 .badge-warning {
   background: rgba(255, 193, 7, 0.15);
   color: #ffc107;
   border-color: rgba(255, 193, 7, 0.4);
 }
+
 .badge-returned {
   background: rgba(151, 160, 183, 0.15);
   color: #97a0b7;
@@ -797,28 +1077,62 @@ onMounted(() => {
 .role-select {
   background: #0a0c12;
   color: #e3e5eb;
-  border: 1px solid #33394b;
-  padding: 0.5rem 0.8rem;
+  border: 1px solid #2d3348;
+  padding: 0.4rem 0.5rem;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  outline: none;
   cursor: pointer;
+  max-width: 120px;
   transition: border-color 0.2s;
 }
+
 .role-select:hover:not(:disabled) {
   border-color: #ff9d00;
 }
+
 .role-select:focus {
   outline: none;
   border-color: #ed4d4d;
 }
+
 .role-select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+.cell-dni {
+  color: #97a0b7;
+  width: 90px;
+}
+
 .cell-date {
-  color: #7a839e;
-  font-size: 0.85rem;
+  color: #5c6480;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 1100px) {
+
+  .cell-date,
+  th:nth-child(7) {
+    display: none;
+  }
+}
+
+@media (max-width: 950px) {
+
+  .cell-email,
+  th:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .cell-dni,
+  th:nth-child(4) {
+    display: none;
+  }
 }
 
 .badge-danger {
@@ -828,19 +1142,29 @@ onMounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {
   .admin-page {
     padding: 1rem;
   }
+
   .users-table th,
   .users-table td {
     padding: 0.8rem;
   }
-  .cell-email, .cell-date {
+
+  .cell-email,
+  .cell-date {
     display: none;
   }
 }
@@ -866,8 +1190,15 @@ onMounted(() => {
   gap: 0.4rem;
   transition: background 0.2s;
 }
-.add-btn:hover { background: #16a34a; }
-.plus-icon { font-size: 1.2rem; line-height: 1; }
+
+.add-btn:hover {
+  background: #16a34a;
+}
+
+.plus-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
 
 @media (max-width: 600px) {
   .actions-bar {
@@ -898,9 +1229,24 @@ onMounted(() => {
   min-width: 80px;
   text-align: center;
 }
-.status-badge.pendiente { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
-.status-badge.activo { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
-.status-badge.devuelto { background: rgba(151, 160, 183, 0.2); color: #97a0b7; border: 1px solid rgba(151, 160, 183, 0.3); }
+
+.status-badge.pendiente {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.activo {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge.devuelto {
+  background: rgba(151, 160, 183, 0.2);
+  color: #97a0b7;
+  border: 1px solid rgba(151, 160, 183, 0.3);
+}
 
 .btn-activate {
   background: rgba(34, 197, 94, 0.15);
@@ -912,8 +1258,118 @@ onMounted(() => {
   font-size: 0.8rem;
   transition: all 0.2s;
 }
+
 .btn-activate:hover {
   background: rgba(34, 197, 94, 0.3);
+}
+
+.delete-btn-table {
+  background: transparent;
+  border: 1px solid rgba(237, 77, 77, 0.3);
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.delete-btn-table:hover {
+  background: rgba(237, 77, 77, 0.15);
+  border-color: #ed4d4d;
+}
+
+.delete-btn-table-text {
+  background: rgba(237, 77, 77, 0.1);
+  border: 1px solid rgba(237, 77, 77, 0.3);
+  color: #ff8a8a;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.delete-btn-table-text:hover {
+  background: #ed4d4d;
+  color: white;
+  border-color: #ed4d4d;
+}
+
+.delete-modal {
+  max-width: 450px;
+  text-align: center;
+}
+
+.danger-title {
+  color: #ff5e5e !important;
+  font-weight: 800;
+}
+
+.warning-box {
+  background: rgba(237, 77, 77, 0.05);
+  border: 1px solid rgba(237, 77, 77, 0.2);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.user-to-del {
+  display: block;
+  margin: 1rem 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.warning-text {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+.delete-confirm-btn {
+  background: #ed4d4d !important;
+}
+
+.delete-confirm-btn:hover {
+  background: #ff3b3b !important;
+  box-shadow: 0 0 15px rgba(237, 77, 77, 0.4);
+}
+
+.relative {
+  position: relative;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #1a1e2e;
+  border: 1px solid #2d3348;
+  border-radius: 8px;
+  margin: 0.25rem 0 0;
+  padding: 0.5rem 0;
+  list-style: none;
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.suggestions-list li {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #c6cbdb;
+  transition: all 0.2s;
+}
+
+.suggestions-list li:hover {
+  background: rgba(237, 77, 77, 0.15);
+  color: #ff8a8a;
 }
 
 .btn-return {
@@ -926,13 +1382,17 @@ onMounted(() => {
   font-size: 0.8rem;
   transition: all 0.2s;
 }
+
 .btn-return:hover {
   background: rgba(237, 77, 77, 0.3);
 }
 
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(4, 5, 8, 0.85);
   backdrop-filter: blur(5px);
   display: flex;
@@ -948,16 +1408,26 @@ onMounted(() => {
   padding: 2rem;
   width: 90%;
   max-width: 650px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
   animation: modalIn 0.3s ease;
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.modal-content h2 { margin: 0 0 1.5rem; color: #fff; }
+.modal-content h2 {
+  margin: 0 0 1.5rem;
+  color: #fff;
+}
 
 .modal-error {
   background: rgba(237, 77, 77, 0.1);
@@ -986,7 +1456,8 @@ onMounted(() => {
   gap: 0.4rem;
 }
 
-.input-group label, .file-label {
+.input-group label,
+.file-label {
   font-size: 0.9rem;
   color: #97a0b7;
 }
@@ -999,6 +1470,7 @@ onMounted(() => {
   border-radius: 6px;
   font-size: 0.95rem;
 }
+
 .input-group input:focus {
   outline: none;
   border-color: #ed4d4d;
@@ -1008,6 +1480,7 @@ onMounted(() => {
 .input-group input[type="number"]::-webkit-outer-spin-button,
 .input-group input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
@@ -1015,13 +1488,17 @@ onMounted(() => {
   -moz-appearance: textfield;
 }
 
-.file-upload-section { margin-top: 0.5rem; }
+.file-upload-section {
+  margin-top: 0.5rem;
+}
 
 .upload-area {
   margin-top: 0.5rem;
 }
 
-.hidden-file-input { display: none; }
+.hidden-file-input {
+  display: none;
+}
 
 .upload-box {
   display: flex;
@@ -1037,18 +1514,32 @@ onMounted(() => {
   transition: border-color 0.2s;
 }
 
-.upload-box:hover { border-color: #ed4d4d; }
-.upload-box.has-image { border-style: solid; border-color: #33394b; }
+.upload-box:hover {
+  border-color: #ed4d4d;
+}
+
+.upload-box.has-image {
+  border-style: solid;
+  border-color: #33394b;
+}
 
 .upload-placeholder {
   text-align: center;
   color: #5c6480;
 }
-.upload-placeholder span { font-size: 2rem; }
-.upload-placeholder p { font-size: 0.8rem; margin: 0.5rem 0 0; }
+
+.upload-placeholder span {
+  font-size: 2rem;
+}
+
+.upload-placeholder p {
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0;
+}
 
 .cover-preview {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -1069,7 +1560,11 @@ onMounted(() => {
   border-radius: 6px;
   cursor: pointer;
 }
-.cancel-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+
+.cancel-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
 
 .save-btn {
   background: #ed4d4d;
@@ -1080,6 +1575,13 @@ onMounted(() => {
   font-weight: bold;
   cursor: pointer;
 }
-.save-btn:hover { background: #ff5e5e; }
-.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.save-btn:hover {
+  background: #ff5e5e;
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>

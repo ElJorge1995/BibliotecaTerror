@@ -8,6 +8,7 @@ class AuthController
         $username = trim((string) ($data['username'] ?? ''));
         $firstName = trim((string) ($data['first_name'] ?? ''));
         $lastName = trim((string) ($data['last_name'] ?? ''));
+        $dni = trim((string) ($data['dni'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
         $phone = trim((string) ($data['phone'] ?? ''));
         $password = (string) ($data['password'] ?? '');
@@ -18,11 +19,12 @@ class AuthController
             $username === '' ||
             $firstName === '' ||
             $lastName === '' ||
+            $dni === '' ||
             $email === '' ||
             $password === '' ||
             $passwordConfirmation === ''
         ) {
-            Response::json(['error' => 'username, first_name, last_name, email, password and password_confirmation are required'], 422);
+            Response::json(['error' => 'username, first_name, last_name, dni, email, password and password_confirmation are required'], 422);
         }
 
         if (!preg_match('/^[a-zA-Z0-9._-]{3,30}$/', $username)) {
@@ -59,7 +61,7 @@ class AuthController
                 Response::json(['error' => 'there is already a pending registration for this email or username'], 409);
             }
 
-            $pendingId = User::createPendingRegistration($username, $email, $hash, $name, $firstName, $lastName, $phone, $tokenHash, $expiresAt);
+            $pendingId = User::createPendingRegistration($username, $email, $hash, $name, $firstName, $lastName, $dni, $phone, $tokenHash, $expiresAt);
 
             $verificationUrl = self::buildVerificationUrl($plainToken);
             $sent = MailService::sendVerificationEmail($email, $name, $verificationUrl);
@@ -526,6 +528,7 @@ class AuthController
                     'username' => $user['username'] ?? null,
                     'first_name' => $user['first_name'] ?? null,
                     'last_name' => $user['last_name'] ?? null,
+                    'dni' => $user['dni'] ?? null,
                     'phone' => $user['phone'] ?? null,
                     'name' => $user['name'] ?? null,
                     'role' => $user['role'] ?? null,
@@ -579,6 +582,123 @@ class AuthController
         } catch (Throwable $e) {
             Response::json(['error' => 'could not update role'], 500);
         }
+    }
+
+    public static function adminRegister(): void
+    {
+        self::requireAdmin();
+
+        $data = self::getJsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $email = trim((string) ($data['email'] ?? ''));
+        $dni = trim((string) ($data['dni'] ?? ''));
+        $username = trim((string) ($data['username'] ?? ''));
+        $password = (string) ($data['password'] ?? '');
+        $role = trim((string) ($data['role'] ?? 'user'));
+
+        if ($name === '' || $email === '' || $dni === '' || $password === '' || $username === '') {
+            Response::json(['error' => 'name, username, email, dni and password are required'], 422);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Response::json(['error' => 'invalid email'], 422);
+        }
+
+        if (strlen($password) < 6) {
+            Response::json(['error' => 'password must be at least 6 characters'], 422);
+        }
+
+        if (User::findByEmail($email)) {
+            Response::json(['error' => 'email already exists'], 409);
+        }
+
+        if (User::findByDni($dni)) {
+            Response::json(['error' => 'DNI already exists'], 409);
+        }
+
+        if (User::findByUsername($username)) {
+            Response::json(['error' => 'username already exists'], 409);
+        }
+
+        try {
+            $userId = User::create(
+                $username,
+                $email,
+                password_hash($password, PASSWORD_BCRYPT),
+                $name,
+                '', // firstName
+                '', // lastName
+                $dni,
+                '', // phone
+                $role,
+                1   // is_email_verified
+            );
+
+            SecurityLogger::log('admin_registered_user', $userId);
+
+            $newUser = User::findById($userId);
+            Response::json([
+                'message' => 'user created by admin',
+                'user' => self::mapUser($newUser),
+            ], 201);
+        } catch (Throwable $e) {
+            Response::json(['error' => 'could not create user: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public static function adminDeleteUser(): void
+    {
+        self::requireAdmin();
+
+        $data = self::getJsonInput();
+        $userId = (int) ($data['user_id'] ?? 0);
+
+        if ($userId <= 0) {
+            Response::json(['error' => 'user_id is required'], 422);
+        }
+
+        // Check active loans
+        if (self::hasActiveLoans($userId)) {
+            Response::json(['error' => 'No se puede eliminar al usuario porque tiene préstamos activos sin devolver.'], 403);
+        }
+
+        try {
+            User::delete($userId);
+            SecurityLogger::log('admin_deleted_user', $userId);
+            Response::json(['message' => 'user deleted']);
+        } catch (Throwable $e) {
+            Response::json(['error' => 'could not delete user'], 500);
+        }
+    }
+
+    public static function deleteMe(): void
+    {
+        $session = AuthMiddleware::handle();
+        $userId = (int) ($session['sub'] ?? 0);
+
+        // Check active loans
+        if (self::hasActiveLoans($userId)) {
+            Response::json(['error' => 'No puedes darte de baja mientras tengas préstamos activos sin devolver.'], 403);
+        }
+
+        try {
+            User::delete($userId);
+            SecurityLogger::log('user_deleted_self', $userId);
+            Response::json(['message' => 'account deleted']);
+        } catch (Throwable $e) {
+            Response::json(['error' => 'could not delete account'], 500);
+        }
+    }
+
+    private static function hasActiveLoans(int $userId): bool
+    {
+        $url = "http://localhost:8080/libros_api.php?action=count_active_loans&usuario_id=" . $userId;
+        $response = @file_get_contents($url);
+        if ($response === false) {
+            return false; 
+        }
+        $data = json_decode($response, true);
+        return isset($data['count']) && $data['count'] > 0;
     }
 
     public static function logout(): void
@@ -666,6 +786,17 @@ class AuthController
         ]);
     }
 
+    private static function minMapUser(array $user): array
+    {
+        return [
+            'id' => (int) $user['id'],
+            'username' => $user['username'] ?? null,
+            'email' => $user['email'] ?? null,
+            'name' => $user['name'] ?? null,
+            'role' => $user['role'] ?? null,
+        ];
+    }
+
     private static function mapUser(array $user): array
     {
         return [
@@ -673,6 +804,7 @@ class AuthController
             'username' => $user['username'] ?? null,
             'first_name' => $user['first_name'] ?? null,
             'last_name' => $user['last_name'] ?? null,
+            'dni' => $user['dni'] ?? null,
             'phone' => $user['phone'] ?? null,
             'name' => $user['name'] ?? null,
             'role' => $user['role'] ?? null,

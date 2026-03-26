@@ -80,40 +80,52 @@ export default {
     })
   },
 
-  alquilarLibro(usuarioId, libroId, nombreUsuario) {
-    return booksApi.post('/libros_api.php?action=alquilar', {
+  updateBook(formData) {
+    return booksApi.post('/libros_api.php?action=editar_libro', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  prestarLibro(usuarioId, libroId, nombreUsuario) {
+    return booksApi.post('/libros_api.php?action=prestar', {
       usuario_id: usuarioId,
       libro_id: libroId,
       nombre_usuario: nombreUsuario
     })
   },
 
-  getMisAlquileres(usuarioId) {
+  getMisPrestamos(usuarioId) {
     return booksApi.get('/libros_api.php', {
       params: { 
-        action: 'mis_alquileres',
+        action: 'mis_prestamos',
         usuario_id: usuarioId
       }
     })
   },
 
-  getAllAlquileres() {
+  getAllPrestamos() {
     return booksApi.get('/libros_api.php', {
-      params: { action: 'todos_alquileres' }
+      params: { action: 'todos_prestamos' }
     })
   },
 
-  updateAlquilerStatus(prestamoId, nuevoEstado) {
-    return booksApi.post('/libros_api.php?action=actualizar_alquiler', {
+  updatePrestamoStatus(prestamoId, nuevoEstado) {
+    return booksApi.post('/libros_api.php?action=actualizar_prestamo', {
       prestamo_id: prestamoId,
       estado: nuevoEstado
     })
   },
 
-  valorarAlquiler(prestamoId, rating) {
-    return booksApi.post('/libros_api.php?action=valorar_alquiler', {
+  valorarPrestamo(prestamoId, rating) {
+    return booksApi.post('/libros_api.php?action=valorar_prestamo', {
       prestamo_id: prestamoId,
       rating: rating
     })
+  },
+
+  adminCrearPrestamo(data) {
+    return booksApi.post('/libros_api.php?action=admin_crear_prestamo', data)
   }
 }

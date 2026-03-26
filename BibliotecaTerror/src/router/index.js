@@ -50,8 +50,8 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/alquileres',
-      name: 'Alquileres',
+      path: '/prestamos',
+      name: 'Prestamos',
       component: RentalsPage,
       meta: { requiresAuth: true }
     },
@@ -103,6 +103,11 @@ const router = createRouter({
       path: '/cookies',
       name: 'cookies',
       component: () => import('../pages/CookiesPage.vue')
+    },
+    {
+      path: '/accesibilidad',
+      name: 'accessibility',
+      component: () => import('../pages/AccessibilityPage.vue')
     }
   ]
 })

@@ -18,21 +18,21 @@ const togglingFav = ref(false)
 const isRenting = ref(false)
 const rentMsg = ref({ text: '', type: '' })
 
-const handleAlquilar = async () => {
+const handlePrestar = async () => {
   if (!authStore.isAuthenticated || !authStore.user?.id || !book.value) return
   isRenting.value = true
   rentMsg.value = { text: '', type: '' }
   
   try {
-    await booksApi.alquilarLibro(authStore.user.id, book.value.id, authStore.user.username)
-    rentMsg.value = { text: '¡Libro alquilado con éxito! Tienes este volumen reservado en tu cuenta.', type: 'success' }
+    await booksApi.prestarLibro(authStore.user.id, book.value.id, authStore.user.username)
+    rentMsg.value = { text: '¡Libro prestado con éxito! Tienes este volumen reservado en tu cuenta.', type: 'success' }
     // Recargar para refrescar stock si lo tuvieramos en vista u otra info
     // (Omitimos reload entero para no hacer blinking visual de imagen, solo editamos stock local prop si existiera, pero de momento reload invisible de datos:)
     const res = await booksApi.getById(book.value.id)
     book.value = res.data.data
   } catch(err) {
     rentMsg.value = { 
-      text: err.response?.data?.error || 'Error al procesar el alquiler en el servidor.',
+      text: err.response?.data?.error || 'Error al procesar el préstamo en el servidor.',
       type: 'error'
     }
   } finally {
@@ -152,10 +152,10 @@ const goBack = () => {
                 <button 
                   v-if="authStore.isAuthenticated"
                   class="action-btn primary-btn" 
-                  @click="handleAlquilar"
+                  @click="handlePrestar"
                   :disabled="isRenting || (book.stock !== undefined && book.stock <= 0)"
                 >
-                  {{ isRenting ? 'Procesando...' : ((book.stock !== undefined && book.stock <= 0) ? 'Agotado Temporalmente' : 'Alquilar Libro') }}
+                  {{ isRenting ? 'Procesando...' : ((book.stock !== undefined && book.stock <= 0) ? 'Agotado Temporalmente' : 'Solicitar préstamo') }}
                 </button>
 
                 <button v-if="authStore.isAuthenticated" 
@@ -188,7 +188,7 @@ const goBack = () => {
 .book-details-page {
   position: relative;
   min-height: calc(100vh - 70px);
-  background: #0a0d14;
+  background: transparent;
 }
 
 /* Background Inmersivo */
@@ -210,7 +210,7 @@ const goBack = () => {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent, #0a0d14 90%);
+  background: linear-gradient(to bottom, transparent, rgba(10, 11, 16, 0.8) 90%);
 }
 
 .content-container {

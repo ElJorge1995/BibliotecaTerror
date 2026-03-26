@@ -65,7 +65,7 @@ const exploreBooks = () => {
         <BookCard
           v-for="book in books"
           :key="book.id"
-          :id="book.id"
+          :id="Number(book.id)"
           :title="book.titulo_es || book.titulo"
           :author="book.autor"
           :portada="book.portada"

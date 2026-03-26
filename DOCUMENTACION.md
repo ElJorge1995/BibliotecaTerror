@@ -19,9 +19,9 @@ El Backend está descentralizado en carpetas independientes para simular microse
 1. **API de Autenticación (`/ApiLoging`)**:
    - Gestiona el Login, Registro y Emisión de tokens de sesión JWT o validaciones seguras (`login.php`, `register.php`, `api.php`).
    - Sirve bajo su propio puerto para segregación (`localhost:8000`).
-2. **API de Catálogo y Alquileres (`/backend/libros_api`)**:
+2. **API de Catálogo y Préstamos (`/backend/libros_api`)**:
    - Expone rutas RESTful bajo `libros_api.php` mediante parámetros `?action=...`
-   - Permite listar novedades, dar like, gestionar alquileres interactuando con la tabla `prestamos` y filtrando mediante `JOIN`.
+   - Permite listar novedades, dar like, gestionar préstamos interactuando con la tabla `prestamos` y filtrando mediante `JOIN`.
    - Sirve en `localhost:8080`.
 
 ### 1.3 Base de Datos
@@ -34,9 +34,9 @@ El Backend está descentralizado en carpetas independientes para simular microse
 
 ---
 
-## 2. Flujo Exigente de Negocio: Los Alquileres Físicos
+## 2. Flujo Exigente de Negocio: Los Préstamos Físicos
 
-1. **Solicitud de Alquiler**: El cliente accede a Catálogo -> Libro, pulsa "Alquilar libro" (si hay stock disponible en el conteo SQL). La BBDD crea una fila en `prestamos` como `'pendiente'`.
+1. **Solicitud de Préstamo**: El cliente accede a Catálogo -> Libro, pulsa "Solicitar préstamo" (si hay stock disponible en el conteo SQL). La BBDD crea una fila en `prestamos` como `'pendiente'`.
 2. **Control en Tienda (Admin)**: El Cliente asiste físicamente. El administrador entra a su panel de `AdminPage.vue`, busca la reserva y pulsa **Activar**.
 3. **Timer de Castigo**: Al activar, MySQL incrusta el `fecha_prestamo=NOW()` y establece `fecha_devolucion = DATE_ADD(NOW(), +14 DAYS)`. Comienza la cuenta regresiva en rojo si se excede.
 4. **Devolución**: El usuario devuelve el libro en tienda real. El administrador pulsa **Devolver**. MySQL incrusta en `fecha_entregado` el datetime de la resolución.

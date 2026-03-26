@@ -32,6 +32,16 @@ class User
         return $user ?: null;
     }
 
+    public static function findByDni(string $dni): ?array
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('SELECT * FROM users WHERE dni = ? LIMIT 1');
+        $stmt->execute([$dni]);
+        $user = $stmt->fetch();
+
+        return $user ?: null;
+    }
+
     public static function create(
         string $username,
         string $email,
@@ -39,16 +49,19 @@ class User
         string $name,
         string $firstName,
         string $lastName,
+        string $dni,
         string $phone,
-        string $role = 'user'
+        string $role = 'user',
+        int $isEmailVerified = 0
     ): int
     {
         $db = Database::connect();
         $stmt = $db->prepare(
-            'INSERT INTO users(username, email, password, name, first_name, last_name, phone, role, is_email_verified)
-             VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0)'
+            'INSERT INTO users(username, email, password, name, first_name, last_name, dni, phone, role, is_email_verified, email_verified_at)
+             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$username, $email, $passwordHash, $name, $firstName, $lastName, $phone, $role]);
+        $emailVerifiedAt = $isEmailVerified ? date('Y-m-d H:i:s') : null;
+        $stmt->execute([$username, $email, $passwordHash, $name, $firstName, $lastName, $dni, $phone, $role, $isEmailVerified, $emailVerifiedAt]);
 
         return (int) $db->lastInsertId();
     }
@@ -60,6 +73,7 @@ class User
         string $name,
         string $firstName,
         string $lastName,
+        string $dni,
         string $phone,
         string $tokenHash,
         string $expiresAt
@@ -69,10 +83,10 @@ class User
         $cleanup->execute([$email, $username]);
 
         $stmt = $db->prepare(
-            'INSERT INTO pending_registrations(username, email, password_hash, name, first_name, last_name, phone, token_hash, expires_at)
-             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO pending_registrations(username, email, password_hash, name, first_name, last_name, dni, phone, token_hash, expires_at)
+             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$username, $email, $passwordHash, $name, $firstName, $lastName, $phone !== '' ? $phone : null, $tokenHash, $expiresAt]);
+        $stmt->execute([$username, $email, $passwordHash, $name, $firstName, $lastName, $dni, $phone !== '' ? $phone : null, $tokenHash, $expiresAt]);
 
         return (int) $db->lastInsertId();
     }
@@ -161,8 +175,8 @@ class User
             }
 
             $insert = $db->prepare(
-                'INSERT INTO users(username, email, password, name, first_name, last_name, phone, role, is_email_verified, email_verified_at)
-                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO users(username, email, password, name, first_name, last_name, dni, phone, role, is_email_verified, email_verified_at)
+                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
             $insert->execute([
                 $pending['username'],
@@ -171,6 +185,7 @@ class User
                 $pending['name'],
                 $pending['first_name'],
                 $pending['last_name'],
+                $pending['dni'],
                 $pending['phone'],
                 'user',
             ]);
@@ -378,11 +393,18 @@ class User
     {
         $db = Database::connect();
         $stmt = $db->query(
-            'SELECT id, username, email, name, first_name, last_name, phone, role, is_email_verified, email_verified_at, created_at
+            'SELECT id, username, email, name, first_name, last_name, dni, phone, role, is_email_verified, email_verified_at, created_at
              FROM users
              ORDER BY created_at DESC, id DESC'
         );
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    public static function delete(int $id): bool
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('DELETE FROM users WHERE id = ?');
+        return $stmt->execute([$id]);
     }
 }
