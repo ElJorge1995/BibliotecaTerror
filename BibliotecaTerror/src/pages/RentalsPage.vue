@@ -145,12 +145,13 @@ const rateBook = async (rent, star) => {
 <style scoped>
 .rentals-page {
   min-height: calc(100vh - 70px);
-  background: #0a0d14;
+  background: transparent;
   padding-bottom: 4rem;
 }
 
 .rentals-header {
-  background: linear-gradient(180deg, rgba(30, 32, 48, 0.8) 0%, #0a0d14 100%);
+  background: linear-gradient(180deg, rgba(30, 32, 48, 0.4) 0%, transparent 100%);
+  backdrop-filter: blur(5px);
   padding: 4rem 1.5rem 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -186,8 +187,9 @@ const rateBook = async (rent, star) => {
 }
 
 .rental-card {
-  background: #11141e;
-  border: 1px solid #1f2335;
+  background: rgba(17, 20, 30, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   display: flex;
   gap: 1rem;

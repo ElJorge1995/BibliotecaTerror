@@ -123,5 +123,9 @@ export default {
       prestamo_id: prestamoId,
       rating: rating
     })
+  },
+
+  adminCrearPrestamo(data) {
+    return booksApi.post('/libros_api.php?action=admin_crear_prestamo', data)
   }
 }

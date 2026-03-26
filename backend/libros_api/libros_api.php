@@ -98,6 +98,18 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $libros]);
         break;
 
+    case 'count_active_loans':
+        $usuario_id = (int)($_GET['usuario_id'] ?? 0);
+        if ($usuario_id <= 0) {
+            echo json_encode(['success' => false, 'count' => 0]);
+            break;
+        }
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM prestamos WHERE usuario_id = ? AND estado IN ('activo', 'pendiente')");
+        $stmt->execute([$usuario_id]);
+        $count = (int)$stmt->fetchColumn();
+        echo json_encode(['success' => true, 'count' => $count]);
+        break;
+
     // GET /libros_api.php?action=obtener&id=123
     case 'obtener':
         $id = (int)($_GET['id'] ?? 0);
@@ -353,8 +365,8 @@ switch ($action) {
         try {
             $pdo->beginTransaction();
 
-            // 1. Contar préstamos activos del usuario
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM prestamos WHERE usuario_id = ? AND estado = 'activo'");
+            // 1. Contar préstamos activos o pendientes del usuario (límite 2)
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM prestamos WHERE usuario_id = ? AND estado IN ('activo', 'pendiente')");
             $stmt->execute([$usuario_id]);
             $prestamosActivos = $stmt->fetchColumn();
 
@@ -515,6 +527,96 @@ switch ($action) {
             $pdo->rollBack();
             http_response_code(500);
             echo json_encode(['error' => 'Error al calcular rating: ' . $e->getMessage()]);
+        }
+        break;
+
+    // POST /libros_api.php?action=admin_crear_prestamo
+    case 'admin_crear_prestamo':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $dni = trim((string)($data['dni'] ?? ''));
+        $libro_titulo = trim((string)($data['libro_titulo'] ?? ''));
+        $fecha_devolucion = $data['fecha_devolucion'] ?? null;
+
+        if (empty($dni) || empty($libro_titulo)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'DNI y título del libro son obligatorios.']);
+            break;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // 1. Buscar usuario por DNI en la db 'bibliouser'
+            // Usamos una conexión temporal para no interferir con la principal
+            $dsn_user = "mysql:host=localhost;dbname=bibliouser;charset=utf8mb4";
+            $pdo_user = new PDO($dsn_user, "root", "");
+            $pdo_user->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $stmt = $pdo_user->prepare("SELECT id, name FROM users WHERE dni = ?");
+            $stmt->execute([$dni]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['error' => "No se encontró ningún usuario con DNI: $dni"]);
+                break;
+            }
+
+            $usuario_id = $user['id'];
+            $nombre_usuario = $user['name'];
+
+            // 2. Buscar libro por título
+            $stmt = $pdo->prepare("SELECT id, stock FROM libros WHERE titulo = ? OR titulo_es = ? LIMIT 1");
+            $stmt->execute([$libro_titulo, $libro_titulo]);
+            $libro = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$libro) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['error' => "No se encontró ningún libro con título: $libro_titulo"]);
+                break;
+            }
+
+            $libro_id = $libro['id'];
+            $stockActual = $libro['stock'];
+
+            // 3. Verificar límites de préstamo del usuario (incluye activos y pendientes)
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM prestamos WHERE usuario_id = ? AND estado IN ('activo', 'pendiente')");
+            $stmt->execute([$usuario_id]);
+            $prestamosActivos = $stmt->fetchColumn();
+
+            if ($prestamosActivos >= 2) {
+                $pdo->rollBack();
+                http_response_code(403);
+                echo json_encode(['error' => 'El usuario ya tiene el límite máximo de 2 libros prestados.']);
+                break;
+            }
+
+            // 4. Verificar stock
+            if ($stockActual <= 0) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['error' => 'El libro no tiene stock disponible.']);
+                break;
+            }
+
+            // 5. Restar stock
+            $stmt = $pdo->prepare("UPDATE libros SET stock = stock - 1 WHERE id = ? AND stock > 0");
+            $stmt->execute([$libro_id]);
+
+            // 6. Crear préstamo (Activo directamente)
+            $final_devolucion = $fecha_devolucion ? $fecha_devolucion : date('Y-m-d H:i:s', strtotime('+15 days'));
+            $stmt = $pdo->prepare("INSERT INTO prestamos (usuario_id, nombre_usuario, libro_id, estado, fecha_prestamo, fecha_devolucion) VALUES (?, ?, ?, 'activo', NOW(), ?)");
+            $stmt->execute([$usuario_id, $nombre_usuario, $libro_id, $final_devolucion]);
+
+            $pdo->commit();
+            echo json_encode(['success' => true, 'mensaje' => 'Préstamo creado con éxito.']);
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al crear préstamo manual: ' . $e->getMessage()]);
         }
         break;
 

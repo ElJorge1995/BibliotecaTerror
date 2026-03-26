@@ -4,6 +4,7 @@ import { ref } from 'vue'
 const formData = ref({
   first_name: '',
   last_name: '',
+  dni: '',
   email: '',
   phone: '',
   username: '',
@@ -52,6 +53,7 @@ const handleRegister = async () => {
       formData.value = {
         first_name: '',
         last_name: '',
+        dni: '',
         email: '',
         phone: '',
         username: '',
@@ -93,6 +95,11 @@ const handleRegister = async () => {
             <input type="text" v-model="formData.last_name" placeholder="Ej. Salazar" required />
           </label>
         </div>
+        
+        <label>
+          DNI
+          <input type="text" v-model="formData.dni" placeholder="Ej. 12345678X" required />
+        </label>
 
         <label>
           Correo electronico

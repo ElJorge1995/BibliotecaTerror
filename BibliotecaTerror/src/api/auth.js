@@ -53,6 +53,15 @@ export default {
   adminUpdateRole(userId, role) {
     return api.post('/auth/admin/update-role', { user_id: userId, role })
   },
+  adminRegister(data) {
+    return api.post('/auth/admin/register', data)
+  },
+  adminDeleteUser(userId) {
+    return api.post('/auth/admin/delete-user', { user_id: userId })
+  },
+  deleteMe() {
+    return api.post('/auth/delete-me')
+  },
 
   // Profile Settings Endpoints
   updateName(firstName, lastName) {

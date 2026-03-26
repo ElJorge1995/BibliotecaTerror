@@ -103,6 +103,18 @@ if ($uri === '/auth/admin/update-role' && $method === 'POST') {
     AuthController::adminUpdateRole();
 }
 
+if ($uri === '/auth/admin/register' && $method === 'POST') {
+    AuthController::adminRegister();
+}
+
+if ($uri === '/auth/admin/delete-user' && $method === 'POST') {
+    AuthController::adminDeleteUser();
+}
+
+if ($uri === '/auth/delete-me' && $method === 'POST') {
+    AuthController::deleteMe();
+}
+
 if ($uri === '/auth/logout' && $method === 'POST') {
     AuthController::logout();
 }

@@ -188,7 +188,7 @@ const goBack = () => {
 .book-details-page {
   position: relative;
   min-height: calc(100vh - 70px);
-  background: #0a0d14;
+  background: transparent;
 }
 
 /* Background Inmersivo */
@@ -210,7 +210,7 @@ const goBack = () => {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent, #0a0d14 90%);
+  background: linear-gradient(to bottom, transparent, rgba(10, 11, 16, 0.8) 90%);
 }
 
 .content-container {
