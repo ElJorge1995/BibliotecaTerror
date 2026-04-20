@@ -23,6 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/../../ApiLoging/config/Env.php';
+require_once __DIR__ . '/../../ApiLoging/services/NotionService.php';
+
+Env::load(__DIR__ . '/../../ApiLoging/.env');
 
 /** @var string $action Control principal de rutas RESTful estáticas */
 $action = $_GET['action'] ?? '';
@@ -284,6 +288,11 @@ switch ($action) {
             $stmt = $pdo->prepare("INSERT INTO libros (google_id, titulo, autor, stock, categoria, portada) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->execute([$isbn, $titulo, $autor, $stock, $categoria, $portada_url]);
             $new_id = $pdo->lastInsertId();
+            NotionService::syncBookCreated([
+                'id' => $new_id, 'google_id' => $isbn, 'titulo' => $titulo, 
+                'autor' => $autor, 'stock' => $stock, 'categoria' => $categoria, 
+                'portada' => $portada_url, 'rating' => 0
+            ]);
             echo json_encode(['success' => true, 'id' => $new_id]);
         } catch(PDOException $e) {
             http_response_code(500);
@@ -342,6 +351,12 @@ switch ($action) {
                 $stmt = $pdo->prepare("UPDATE libros SET google_id = ?, titulo = ?, autor = ?, stock = ?, categoria = ? WHERE id = ?");
                 $stmt->execute([$isbn, $titulo, $autor, $stock, $categoria, $id]);
             }
+            // Sincronizar actualización con Notion
+            $stmtGet = $pdo->prepare("SELECT * FROM libros WHERE id = ?");
+            $stmtGet->execute([$id]);
+            $updatedBook = $stmtGet->fetch();
+            if ($updatedBook) NotionService::syncBookUpdated($updatedBook);
+            
             echo json_encode(['success' => true]);
         } catch(PDOException $e) {
             http_response_code(500);
@@ -401,10 +416,21 @@ switch ($action) {
             }
 
             // 4. Crear préstamo en espera de reserva ('pendiente' y caducidad Nula)
-            $stmt = $pdo->prepare("INSERT INTO prestamos (usuario_id, nombre_usuario, libro_id, estado, fecha_devolucion) VALUES (?, ?, ?, 'pendiente', NULL)");
-            $stmt->execute([$usuario_id, $nombre_usuario, $libro_id]);
+            $new_loan_id = $pdo->lastInsertId();
 
             $pdo->commit();
+
+            // Sincronizar prestamo con Notion (necesitamos el titulo del libro)
+            $stmtLibro = $pdo->prepare("SELECT titulo FROM libros WHERE id = ?");
+            $stmtLibro->execute([$libro_id]);
+            $tituloLibro = $stmtLibro->fetchColumn() ?: 'Libro Desconocido';
+            
+            NotionService::syncLoanCreated([
+                'id' => $new_loan_id, 'titulo' => $tituloLibro, 
+                'nombre_usuario' => $nombre_usuario, 'estado' => 'pendiente',
+                'fecha_prestamo' => date('Y-m-d H:i:s'), 'id_usuario' => $usuario_id
+            ]);
+
             echo json_encode(['success' => true]);
 
         } catch (Exception $e) {
@@ -467,6 +493,13 @@ switch ($action) {
             $stmtUpdate->execute([$nuevo_estado, $prestamo_id]);
 
             $pdo->commit();
+            
+            // Sincronizar prestamo con Notion
+            $stmtGet = $pdo->prepare("SELECT p.*, l.titulo FROM prestamos p JOIN libros l ON p.libro_id = l.id WHERE p.id = ?");
+            $stmtGet->execute([$prestamo_id]);
+            $updatedLoan = $stmtGet->fetch();
+            if ($updatedLoan) NotionService::syncLoanUpdated($updatedLoan);
+
             echo json_encode(['success' => true, 'mensaje' => 'Estado actualizado y stock ajustado']);
 
         } catch (Exception $e) {
@@ -521,6 +554,19 @@ switch ($action) {
             $stmtMath->execute([$libro_id, $libro_id]);
 
             $pdo->commit();
+
+            // Sincronizar valoracion con Notion
+            $stmtGet = $pdo->prepare("SELECT p.*, l.titulo FROM prestamos p JOIN libros l ON p.libro_id = l.id WHERE p.id = ?");
+            $stmtGet->execute([$prestamo_id]);
+            $updatedLoan = $stmtGet->fetch();
+            if ($updatedLoan) NotionService::syncLoanUpdated($updatedLoan);
+
+            // Tambien sincronizar el rating actualizado del libro
+            $stmtGetLibro = $pdo->prepare("SELECT * FROM libros WHERE id = ?");
+            $stmtGetLibro->execute([$libro_id]);
+            $updatedBook = $stmtGetLibro->fetch();
+            if ($updatedBook) NotionService::syncBookUpdated($updatedBook);
+
             echo json_encode(['success' => true]);
 
         } catch (Exception $e) {
@@ -610,7 +656,17 @@ switch ($action) {
             $stmt = $pdo->prepare("INSERT INTO prestamos (usuario_id, nombre_usuario, libro_id, estado, fecha_prestamo, fecha_devolucion) VALUES (?, ?, ?, 'activo', NOW(), ?)");
             $stmt->execute([$usuario_id, $nombre_usuario, $libro_id, $final_devolucion]);
 
+            $new_loan_id = $pdo->lastInsertId();
             $pdo->commit();
+
+            // Sincronizar con Notion
+            NotionService::syncLoanCreated([
+                'id' => $new_loan_id, 'titulo' => $libro_titulo, 
+                'nombre_usuario' => $nombre_usuario, 'estado' => 'activo',
+                'fecha_prestamo' => date('Y-m-d H:i:s'), 'fecha_devolucion' => $final_devolucion,
+                'dni' => $dni, 'id_usuario' => $usuario_id
+            ]);
+
             echo json_encode(['success' => true, 'mensaje' => 'Préstamo creado con éxito.']);
 
         } catch (Exception $e) {
