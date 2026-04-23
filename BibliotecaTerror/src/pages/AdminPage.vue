@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import authApi from '../api/auth'
 import booksApi from '../api/books.js'
 import { useAuthStore } from '../stores/auth'
@@ -244,6 +244,87 @@ const handleAdminDelete = async () => {
   }
 }
 
+// --- Menú de 3 puntitos (ban / force-logout) ---
+// El menú se teletransporta al <body> para que el position:absolute no se
+// quede atrapado dentro del contenedor con overflow de la tabla (eso
+// generaba scroll interno, ver screenshot). Calculamos las coordenadas
+// del botón y pasamos un style con top/left absolutos.
+const openActionsMenuId = ref(null)
+const actionsMenuStyle = ref({})
+const openActionsUser = computed(() =>
+  users.value.find(u => u.id === openActionsMenuId.value) || null
+)
+
+const toggleActionsMenu = async (userId, event) => {
+  if (openActionsMenuId.value === userId) {
+    closeActionsMenu()
+    return
+  }
+  openActionsMenuId.value = userId
+  await nextTick()
+  const rect = event.currentTarget.getBoundingClientRect()
+  actionsMenuStyle.value = {
+    position: 'absolute',
+    top: `${rect.bottom + window.scrollY + 6}px`,
+    left: `${rect.right + window.scrollX - 170}px`,
+    minWidth: '170px',
+    zIndex: 9999,
+  }
+}
+
+const closeActionsMenu = () => {
+  openActionsMenuId.value = null
+}
+
+const isSelfUser = (user) => authStore.user && authStore.user.id === user.id
+
+const handleForceLogout = async (user) => {
+  closeActionsMenu()
+  if (!confirm(`¿Cerrar la sesión activa de ${user.username || user.email}?`)) return
+  const currentPassword = prompt('Confirma tu contraseña de admin para cerrar la sesión:')
+  if (!currentPassword) return
+  try {
+    await authApi.adminForceLogout(user.id, currentPassword)
+    alert('Sesiones del usuario cerradas.')
+    fetchUsers()
+  } catch (err) {
+    alert(err.response?.data?.error || 'No se pudo cerrar la sesión.')
+  }
+}
+
+const handleToggleBan = async (user) => {
+  closeActionsMenu()
+  const banning = !user.banned_at
+  const verb = banning ? 'Banear' : 'Desbanear'
+  if (!confirm(`¿${verb} a ${user.username || user.email}?`)) return
+  const currentPassword = prompt(`Confirma tu contraseña de admin para ${verb.toLowerCase()}:`)
+  if (!currentPassword) return
+  try {
+    await authApi.adminSetBan(user.id, banning, currentPassword)
+    alert(banning ? 'Usuario baneado.' : 'Usuario desbaneado.')
+    fetchUsers()
+  } catch (err) {
+    alert(err.response?.data?.error || 'No se pudo actualizar el baneo.')
+  }
+}
+
+// Cerrar el menú al clicar fuera o hacer scroll.
+const onClickOutsideActionsMenu = (e) => {
+  if (!e.target.closest('.actions-trigger') && !e.target.closest('.actions-menu')) {
+    closeActionsMenu()
+  }
+}
+const onScrollCloseActionsMenu = () => closeActionsMenu()
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutsideActionsMenu)
+  window.addEventListener('scroll', onScrollCloseActionsMenu, true)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutsideActionsMenu)
+  window.removeEventListener('scroll', onScrollCloseActionsMenu, true)
+})
+
 // --- Lógica del Modal Nuevo Préstamo ---
 const showPrestamoModal = ref(false)
 const prestamoLoading = ref(false)
@@ -458,12 +539,13 @@ onMounted(() => {
               <th>DNI</th>
               <th>Verificado</th>
               <th>Rol</th>
+              <th>Estado</th>
               <th>Fecha Registro</th>
-              <th>Acciones</th>
+              <th class="col-actions" aria-label="Acciones"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="user in filteredUsers" :key="user.id">
+            <tr v-for="user in filteredUsers" :key="user.id" :class="{ 'is-banned': !!user.banned_at }">
               <td class="cell-id">#{{ user.id }}</td>
               <td class="cell-user">
                 <div class="user-info">
@@ -486,10 +568,20 @@ onMounted(() => {
                   <option value="admin">Administrador (Admin)</option>
                 </select>
               </td>
+              <td class="cell-status">
+                <span :class="['badge', user.banned_at ? 'badge-danger' : 'badge-success']">
+                  {{ user.banned_at ? 'Baneado' : 'Activo' }}
+                </span>
+              </td>
               <td class="cell-date">{{ formatDate(user.created_at) }}</td>
-              <td>
-                <button class="delete-btn-table-text" title="Dar de baja" @click="confirmDeleteUser(user)">
-                  Dar de baja
+              <td class="cell-actions">
+                <button v-if="!isSelfUser(user)" class="actions-trigger" type="button"
+                  :class="{ 'is-active': openActionsMenuId === user.id }"
+                  :aria-expanded="openActionsMenuId === user.id"
+                  @click.stop="toggleActionsMenu(user.id, $event)" title="Acciones">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                  </svg>
                 </button>
               </td>
             </tr>
@@ -793,6 +885,21 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div v-if="openActionsUser" class="actions-menu" :style="actionsMenuStyle" @click.stop>
+      <button v-if="!openActionsUser.banned_at" class="action-item" @click="handleForceLogout(openActionsUser)">
+        Cerrar sesión
+      </button>
+      <button class="action-item" :class="openActionsUser.banned_at ? 'action-success' : 'action-danger'"
+        @click="handleToggleBan(openActionsUser)">
+        {{ openActionsUser.banned_at ? 'Desbanear' : 'Banear' }}
+      </button>
+      <button class="action-item action-danger" @click="closeActionsMenu(); confirmDeleteUser(openActionsUser)">
+        Dar de baja
+      </button>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -1072,6 +1179,57 @@ onMounted(() => {
   background: rgba(151, 160, 183, 0.15);
   color: #97a0b7;
   border-color: rgba(151, 160, 183, 0.4);
+}
+
+/* === 3-dot actions menu (admin users row) === */
+.cell-actions {
+  width: 72px;
+  text-align: center;
+  position: relative;
+}
+
+.actions-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e3e5eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actions-trigger svg {
+  width: 18px;
+  height: 18px;
+}
+
+.actions-trigger:hover,
+.actions-trigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+
+.users-table tbody tr.is-banned td {
+  opacity: 0.55;
+}
+
+.users-table tbody tr.is-banned:hover td {
+  opacity: 0.75;
+}
+
+.users-table tbody tr.is-banned td.cell-actions,
+.users-table tbody tr.is-banned:hover td.cell-actions {
+  opacity: 1;
 }
 
 .role-select {
@@ -1583,5 +1741,60 @@ onMounted(() => {
 .save-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+</style>
+
+<!-- Estilos no-scoped para el menú teleportado al <body>: los selectores .actions-menu
+     viven fuera del árbol del componente, así que no pueden ser scoped. -->
+<style>
+.actions-menu {
+  min-width: 170px;
+  background: #1a1d25;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: actionsMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes actionsMenuFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.actions-menu .action-item {
+  background: transparent;
+  border: none;
+  color: #e3e5eb;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+
+.actions-menu .action-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.actions-menu .action-item.action-danger {
+  color: #ed4d4d;
+}
+
+.actions-menu .action-item.action-danger:hover {
+  background: rgba(237, 77, 77, 0.12);
+}
+
+.actions-menu .action-item.action-success {
+  color: #4ade80;
+}
+
+.actions-menu .action-item.action-success:hover {
+  background: rgba(34, 197, 94, 0.12);
 }
 </style>

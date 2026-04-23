@@ -243,8 +243,10 @@ class User
 
     public static function updatePasswordHash(int $userId, string $passwordHash): void
     {
+        // password_changed_at se actualiza junto al hash: el middleware lo usa
+        // para invalidar JWTs emitidos antes del cambio (ver AuthMiddleware).
         $db = Database::connect();
-        $stmt = $db->prepare('UPDATE users SET password = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE users SET password = ?, password_changed_at = NOW() WHERE id = ?');
         $stmt->execute([$passwordHash, $userId]);
     }
 
@@ -393,7 +395,7 @@ class User
     {
         $db = Database::connect();
         $stmt = $db->query(
-            'SELECT id, username, email, name, first_name, last_name, dni, phone, role, is_email_verified, email_verified_at, created_at
+            'SELECT id, username, email, name, first_name, last_name, dni, phone, role, is_email_verified, email_verified_at, banned_at, banned_by, created_at
              FROM users
              ORDER BY created_at DESC, id DESC'
         );
@@ -406,5 +408,142 @@ class User
         $db = Database::connect();
         $stmt = $db->prepare('DELETE FROM users WHERE id = ?');
         return $stmt->execute([$id]);
+    }
+
+    /**
+     * Devuelve el estado de seguridad del usuario: timestamps de último cambio
+     * de contraseña, ban activo, invalidación masiva de sesiones y session id
+     * actual. Lo usa el middleware para decidir si un JWT sigue siendo válido.
+     *
+     * @return array{password_changed_at: ?int, banned_at: ?int, sessions_invalidated_at: ?int, current_session_id: ?string}
+     */
+    public static function getSecurityState(int $userId): array
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('SELECT password_changed_at, banned_at, sessions_invalidated_at, current_session_id FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+
+        $toTs = static function ($value): ?int {
+            if (empty($value)) return null;
+            $ts = strtotime((string) $value);
+            return $ts !== false ? $ts : null;
+        };
+
+        return [
+            'password_changed_at' => $toTs($row['password_changed_at'] ?? null),
+            'banned_at' => $toTs($row['banned_at'] ?? null),
+            'sessions_invalidated_at' => $toTs($row['sessions_invalidated_at'] ?? null),
+            'current_session_id' => $row['current_session_id'] ?? null,
+        ];
+    }
+
+    public static function banUser(int $userId, int $adminId): void
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            'UPDATE users SET banned_at = NOW(), banned_by = ?, sessions_invalidated_at = NOW(), current_session_id = NULL WHERE id = ?'
+        );
+        $stmt->execute([$adminId, $userId]);
+    }
+
+    public static function unbanUser(int $userId): void
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('UPDATE users SET banned_at = NULL, banned_by = NULL WHERE id = ?');
+        $stmt->execute([$userId]);
+    }
+
+    public static function invalidateSessions(int $userId): void
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('UPDATE users SET sessions_invalidated_at = NOW() WHERE id = ?');
+        $stmt->execute([$userId]);
+    }
+
+    /**
+     * Genera un nuevo session id para el usuario y lo persiste. Devuelve el
+     * sid para incluirlo en el JWT recién emitido. La sesión anterior queda
+     * invalidada en el middleware por no coincidir con el sid guardado.
+     */
+    public static function rotateSession(int $userId): string
+    {
+        $sid = bin2hex(random_bytes(32));
+        $db = Database::connect();
+        $stmt = $db->prepare('UPDATE users SET current_session_id = ? WHERE id = ?');
+        $stmt->execute([$sid, $userId]);
+        return $sid;
+    }
+
+    public static function clearSession(int $userId): void
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('UPDATE users SET current_session_id = NULL WHERE id = ?');
+        $stmt->execute([$userId]);
+    }
+
+    public static function setRequirePasswordReset(int $userId, bool $required): void
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('UPDATE users SET require_password_reset = ? WHERE id = ?');
+        $stmt->execute([$required ? 1 : 0, $userId]);
+    }
+
+    public static function getLastLegitLoginCountry(int $userId): ?string
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            "SELECT country_code FROM login_locations
+             WHERE user_id = ?
+               AND status IN ('neutral', 'confirmed')
+               AND country_code IS NOT NULL
+             ORDER BY created_at DESC, id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+        return $row ? (string) $row['country_code'] : null;
+    }
+
+    public static function recordLoginLocation(
+        int $userId,
+        string $ip,
+        ?string $countryCode,
+        ?string $countryName,
+        string $userAgent,
+        string $status,
+        ?string $tokenHash = null,
+        ?string $tokenExpiresAt = null
+    ): int {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            'INSERT INTO login_locations
+               (user_id, ip, country_code, country_name, user_agent, status, token_hash, token_expires_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $userId, $ip, $countryCode, $countryName,
+            mb_substr($userAgent, 0, 512),
+            $status, $tokenHash, $tokenExpiresAt,
+        ]);
+        return (int) $db->lastInsertId();
+    }
+
+    public static function findLoginLocationByTokenHash(string $tokenHash): ?array
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('SELECT * FROM login_locations WHERE token_hash = ? LIMIT 1');
+        $stmt->execute([$tokenHash]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function updateLoginLocationStatus(int $locationId, string $status): void
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            'UPDATE login_locations SET status = ?, token_used_at = NOW() WHERE id = ?'
+        );
+        $stmt->execute([$status, $locationId]);
     }
 }

@@ -16,6 +16,20 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Response interceptor: si el backend invalida la sesión (login desde otro
+// dispositivo, ban, admin force-logout, expiración por cambio de password…)
+// limpia el token local para que el estado reactivo desloguee al usuario.
+// No redirigimos desde aquí; dejamos que el router/estado haga su trabajo.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && localStorage.getItem('auth_token')) {
+      localStorage.removeItem('auth_token')
+    }
+    return Promise.reject(error)
+  }
+)
+
 export default {
   register(data) {
     return api.post('/auth/register', data)
@@ -59,6 +73,15 @@ export default {
   adminDeleteUser(userId) {
     return api.post('/auth/admin/delete-user', { user_id: userId })
   },
+  adminForceLogout(userId, current_password) {
+    return api.post('/auth/admin/force-logout', { user_id: userId, current_password })
+  },
+  adminSetBan(userId, banned, current_password) {
+    return api.post('/auth/admin/set-ban', { user_id: userId, banned, current_password })
+  },
+  confirmLoginLocation(token, decision) {
+    return api.post('/auth/confirm-login-location', { token, decision })
+  },
   deleteMe() {
     return api.post('/auth/delete-me')
   },
@@ -80,8 +103,8 @@ export default {
       new_password_confirmation 
     })
   },
-  requestEmailChange(new_email) {
-    return api.post('/auth/request-email-change', { new_email })
+  requestEmailChange(new_email, current_password) {
+    return api.post('/auth/request-email-change', { new_email, current_password })
   },
   confirmEmailChange(token) {
     return api.get(`/auth/confirm-email-change?token=${token}`)

@@ -26,7 +26,8 @@ const passwordData = reactive({
 })
 
 const emailData = reactive({
-  new_email: ''
+  new_email: '',
+  current_password: ''
 })
 
 // UI States
@@ -40,13 +41,21 @@ const clearMessages = () => {
   errorMsg.value = ''
 }
 
+const scrollToAlerts = () => {
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
 const showSuccess = (msg) => {
   successMsg.value = msg
+  scrollToAlerts()
   setTimeout(() => clearMessages(), 5000)
 }
 
 const showError = (msg) => {
   errorMsg.value = msg
+  scrollToAlerts()
   setTimeout(() => clearMessages(), 5000)
 }
 
@@ -134,14 +143,19 @@ const handleRequestEmailChange = async () => {
     showError("Introduce el nuevo correo electrónico.")
     return
   }
+  if (!emailData.current_password) {
+    showError("Confirma tu contraseña actual para cambiar el correo.")
+    return
+  }
 
   isLoading.value = true
   clearMessages()
 
   try {
-    await authApi.requestEmailChange(emailData.new_email)
+    await authApi.requestEmailChange(emailData.new_email, emailData.current_password)
     showSuccess(`Se ha enviado un enlace de confirmación a: ${emailData.new_email}. Revisa tu bandeja de entrada.`)
     emailData.new_email = ''
+    emailData.current_password = ''
   } catch (error) {
     showError(error.response?.data?.error || "Error al solicitar el cambio de correo.")
   } finally {
@@ -264,7 +278,10 @@ const handleDeleteAccount = async () => {
                 <div class="form-item">
                   <input v-model="emailData.new_email" type="email" placeholder="Nuevo correo electrónico" :disabled="isLoading" />
                 </div>
-                <button type="submit" class="action-btn outline" :disabled="isLoading">Cambiar Email</button>
+                <div class="form-item">
+                  <input v-model="emailData.current_password" type="password" placeholder="Contraseña actual" :disabled="isLoading" />
+                </div>
+                <button type="submit" class="action-btn secure" :disabled="isLoading">Cambiar Email</button>
               </form>
               <p class="note">Recibirás un enlace de confirmación en el nuevo correo.</p>
             </div>
