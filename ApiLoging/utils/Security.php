@@ -27,6 +27,12 @@ class Security
         header('Referrer-Policy: no-referrer');
         header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
         header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+
+        // HSTS solo si la petición ya viene por HTTPS (de lo contrario el
+        // navegador lo ignora y en local rompería el flujo de desarrollo).
+        if (self::isHttpsRequest()) {
+            header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+        }
     }
 
     public static function enforceProductionTransport(): void
@@ -46,11 +52,21 @@ class Security
         $secret = (string) (getenv('JWT_SECRET') ?: '');
         $appEnv = strtolower((string) (getenv('APP_ENV') ?: 'local'));
 
-        if ($secret === '' || strlen($secret) < 32 || $secret === 'change-this-secret') {
-            if (in_array($appEnv, ['production', 'prod'], true)) {
-                Response::json(['error' => 'jwt secret is not configured securely'], 500);
-            }
+        $isWeak = $secret === '' || strlen($secret) < 32 || $secret === 'change-this-secret';
+        if (!$isWeak) {
+            return;
         }
+
+        // En local se tolera el secret débil para no romper la DX, pero se
+        // registra para que quede rastro. En cualquier otro entorno (staging,
+        // production o valores desconocidos) la API se niega a arrancar:
+        // tomar la decisión por el usuario aquí es lo más seguro.
+        if ($appEnv === 'local') {
+            error_log('JWT_SECRET débil en APP_ENV=local — válido solo para desarrollo.');
+            return;
+        }
+
+        Response::json(['error' => 'jwt secret is not configured securely'], 500);
     }
 
     public static function getClientIp(): string
@@ -115,15 +131,21 @@ class Security
         return [
             'http://localhost:5173',
             'http://localhost:5174',
+            'http://localhost:5175',
+            'http://localhost:5176',
+            'http://localhost:5177',
             'http://127.0.0.1:5173',
             'http://127.0.0.1:5174',
+            'http://127.0.0.1:5175',
+            'http://127.0.0.1:5176',
+            'http://127.0.0.1:5177',
         ];
     }
 
     private static function parseCsv(string $value): array
     {
         $parts = array_map('trim', explode(',', $value));
-        $parts = array_values(array_filter($parts, static fn ($item) => $item !== ''));
+        $parts = array_values(array_filter($parts, static fn($item) => $item !== ''));
         return array_values(array_unique($parts));
     }
 

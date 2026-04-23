@@ -88,7 +88,12 @@ class AuthController
         $data = self::getJsonInput();
         $email = trim((string) ($data['email'] ?? ''));
         $password = (string) ($data['password'] ?? '');
-        RateLimiter::enforce('login', Security::getClientIp() . '|' . strtolower($email), 10, 900);
+        $normalizedEmail = strtolower($email);
+
+        // Throttling unificado: solo contamos FALLOS (5 en 30 min por email).
+        // Los logins exitosos no consumen cuota — necesario para que kick-old
+        // de single-session no bloquee al usuario legítimo reclamando su cuenta.
+        RateLimiter::checkFailureLockout('login_lockout', $normalizedEmail, 5, 1800);
 
         if ($email === '' || $password === '') {
             Response::json(['error' => 'email and password are required'], 422);
@@ -97,6 +102,7 @@ class AuthController
         $user = User::findByEmail($email);
 
         if (!$user || !password_verify($password, $user['password'])) {
+            RateLimiter::recordFailure('login_lockout', $normalizedEmail, 1800);
             SecurityLogger::log('login_failed', $user ? (int) $user['id'] : null, ['email' => $email]);
             Response::json(['error' => 'invalid credentials'], 401);
         }
@@ -106,8 +112,31 @@ class AuthController
             Response::json(['error' => 'email not verified'], 403);
         }
 
-        $token = JwtService::generate($user);
+        if (!empty($user['banned_at'])) {
+            SecurityLogger::log('login_blocked_banned', (int) $user['id'], ['email' => $email]);
+            Response::json(['error' => 'account banned'], 403);
+        }
+
+        if ((int) ($user['require_password_reset'] ?? 0) === 1) {
+            // Emitimos un token de reset y lo enviamos por email; el usuario
+            // sigue bloqueado hasta que complete /auth/reset-password.
+            [$plainToken, $tokenHash, $expiresAt] = self::buildVerificationToken();
+            User::createPasswordResetToken((int) $user['id'], $tokenHash, $expiresAt);
+            $resetUrl = self::buildPasswordResetUrl($plainToken);
+            $sent = MailService::sendPasswordResetEmail((string) $user['email'], (string) $user['name'], $resetUrl);
+            SecurityLogger::log('login_blocked_reset_required', (int) $user['id']);
+            if (!$sent) {
+                Response::json(['error' => 'could not send password reset email'], 500);
+            }
+            Response::json(['error' => 'password reset required'], 403);
+        }
+
+        RateLimiter::resetFailure('login_lockout', $normalizedEmail);
+        $sid = User::rotateSession((int) $user['id']);
+        $token = JwtService::generate($user, $sid);
         SecurityLogger::log('login_success', (int) $user['id']);
+
+        self::handleLoginLocation((int) $user['id'], Security::getClientIp(), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 
         Response::json([
             'token' => $token,
@@ -161,7 +190,8 @@ class AuthController
                 }
             }
 
-            $jwt = JwtService::generate($freshUser);
+            $sid = User::rotateSession((int) $freshUser['id']);
+            $jwt = JwtService::generate($freshUser, $sid);
             $redirectBase = getenv('EMAIL_VERIFY_REDIRECT_URL') ?: '';
 
             if ($redirectBase !== '' && Security::isAllowedAbsoluteUrl($redirectBase, 'REDIRECT_ALLOWED_ORIGINS')) {
@@ -303,8 +333,9 @@ class AuthController
         try {
             User::updatePasswordHash((int) $user['id'], password_hash($newPassword, PASSWORD_BCRYPT));
             User::markPasswordResetAsUsed((int) $user['reset_id']);
+            User::setRequirePasswordReset((int) $user['id'], false);
             SecurityLogger::log('password_reset_completed', (int) $user['id']);
-            Response::json(['message' => 'password updated']);
+            self::respondWithRotatedSession((int) $user['id'], 'password updated');
         } catch (Throwable $e) {
             Response::json(['error' => 'could not reset password'], 500);
         }
@@ -377,7 +408,14 @@ class AuthController
         $userId = (int) ($session['sub'] ?? 0);
         $data = self::getJsonInput();
         $newEmail = trim((string) ($data['new_email'] ?? ''));
+        $currentPassword = (string) ($data['current_password'] ?? '');
         RateLimiter::enforce('request_email_change', Security::getClientIp() . '|' . $userId, 5, 900);
+
+        // Exigimos re-auth con la contraseña para mitigar takeover con JWT robado:
+        // sin esto, un JWT robado bastaría para cambiar email y luego password.
+        if ($currentPassword === '') {
+            Response::json(['error' => 'current_password is required'], 422);
+        }
 
         if (!filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
             Response::json(['error' => 'invalid email'], 422);
@@ -386,6 +424,11 @@ class AuthController
         $currentUser = User::findById($userId);
         if (!$currentUser) {
             Response::json(['error' => 'user not found'], 404);
+        }
+
+        if (!password_verify($currentPassword, (string) $currentUser['password'])) {
+            SecurityLogger::log('email_change_bad_password', $userId);
+            Response::json(['error' => 'current password is incorrect'], 401);
         }
 
         if (strcasecmp((string) $currentUser['email'], $newEmail) === 0) {
@@ -445,7 +488,8 @@ class AuthController
                 error_log('[AuthController] Notion sync on email change failed: ' . $syncError->getMessage());
             }
 
-            $jwt = JwtService::generate($freshUser);
+            $sid = User::rotateSession((int) $freshUser['id']);
+            $jwt = JwtService::generate($freshUser, $sid);
             $redirectBase = getenv('EMAIL_CHANGE_REDIRECT_URL') ?: '';
 
             if ($redirectBase !== '' && Security::isAllowedAbsoluteUrl($redirectBase, 'REDIRECT_ALLOWED_ORIGINS')) {
@@ -498,7 +542,7 @@ class AuthController
         try {
             User::updatePasswordHash($userId, password_hash($newPassword, PASSWORD_BCRYPT));
             SecurityLogger::log('password_changed', $userId);
-            self::respondWithFreshSession($userId, 'password updated');
+            self::respondWithRotatedSession($userId, 'password updated');
         } catch (Throwable $e) {
             Response::json(['error' => 'could not update password'], 500);
         }
@@ -535,6 +579,8 @@ class AuthController
                     'email' => $user['email'] ?? null,
                     'is_email_verified' => (int) ($user['is_email_verified'] ?? 0),
                     'email_verified_at' => $user['email_verified_at'] ?? null,
+                    'banned_at' => $user['banned_at'] ?? null,
+                    'banned_by' => isset($user['banned_by']) ? (int) $user['banned_by'] : null,
                     'created_at' => $user['created_at'] ?? null,
                 ];
             },
@@ -709,12 +755,29 @@ class AuthController
             Response::json(['error' => 'unauthorized'], 401);
         }
 
+        // Verificar firma ANTES de tocar la BBDD para no saturar revoked_tokens
+        // con bearers basura (DoS lento que degrada cada request autenticada).
         try {
-            $db = Database::connect();
-            $stmt = $db->prepare('INSERT INTO revoked_tokens(token) VALUES(?)');
-            $stmt->execute([$token]);
             $decoded = JwtService::verify($token);
-            SecurityLogger::log('logout', isset($decoded['sub']) ? (int) $decoded['sub'] : null);
+        } catch (Throwable $e) {
+            SecurityLogger::log('logout_invalid_token', null);
+            Response::json(['error' => 'invalid token'], 401);
+        }
+
+        RateLimiter::enforce('logout', Security::getClientIp(), 30, 60);
+
+        try {
+            // Solo persistimos el hash (no el JWT en plano) + limpiamos el sid
+            // para que el middleware rechace cualquier token del usuario.
+            $tokenHash = hash('sha256', $token);
+            $db = Database::connect();
+            $stmt = $db->prepare('INSERT INTO revoked_tokens(token_hash) VALUES(?)');
+            $stmt->execute([$tokenHash]);
+            $userId = isset($decoded['sub']) ? (int) $decoded['sub'] : 0;
+            if ($userId > 0) {
+                User::clearSession($userId);
+            }
+            SecurityLogger::log('logout', $userId > 0 ? $userId : null);
             Response::json(['message' => 'logged out']);
         } catch (Throwable $e) {
             Response::json(['error' => 'could not logout'], 500);
@@ -763,6 +826,11 @@ class AuthController
         return $base . $separator . 'token=' . urlencode($plainToken);
     }
 
+    /**
+     * Para updates de perfil (username/name/phone): conserva el sid actual, emite JWT fresh.
+     * Si el admin hizo force-logout mientras el usuario editaba, current_session_id será NULL
+     * y devolvemos 401 en vez de emitir un token sin sid.
+     */
     private static function respondWithFreshSession(int $userId, string $message): void
     {
         $user = User::findById($userId);
@@ -776,8 +844,34 @@ class AuthController
             error_log('[AuthController] Notion sync on profile update failed: ' . $syncError->getMessage());
         }
 
-        // Cada cambio de perfil devuelve un JWT nuevo para no dejar datos obsoletos en cliente.
-        $token = JwtService::generate($user);
+        $currentSid = $user['current_session_id'] ?? null;
+        if (empty($currentSid)) {
+            Response::json(['error' => 'session expired'], 401);
+        }
+
+        $token = JwtService::generate($user, (string) $currentSid);
+
+        Response::json([
+            'message' => $message,
+            'token' => $token,
+            'user' => self::mapUser($user),
+        ]);
+    }
+
+    /**
+     * Para flujos que inician sesión nueva (change-password, reset-password):
+     * rota el sid y emite JWT con el sid nuevo. Los otros dispositivos caen
+     * en el middleware al no coincidir su sid.
+     */
+    private static function respondWithRotatedSession(int $userId, string $message): void
+    {
+        $user = User::findById($userId);
+        if (!$user) {
+            Response::json(['error' => 'user not found'], 404);
+        }
+
+        $sid = User::rotateSession($userId);
+        $token = JwtService::generate($user, $sid);
 
         Response::json([
             'message' => $message,
@@ -822,4 +916,209 @@ class AuthController
 
         return $session;
     }
+
+    /**
+     * Helper compartido por force-logout y set-ban: valida admin + re-auth con
+     * su password + user_id objetivo distinto del propio admin. Devuelve el
+     * adminId, el targetUser y el payload JSON para que el caller lea campos
+     * adicionales (ej. 'banned' en adminSetBan) sin releer php://input.
+     *
+     * @return array{adminId: int, targetUser: array, data: array}
+     */
+    private static function requireAdminForUserMutation(): array
+    {
+        $session = self::requireAdmin();
+        $adminId = (int) ($session['sub'] ?? 0);
+        RateLimiter::enforce('admin_mutate', (string) $adminId, 30, 60);
+
+        $data = self::getJsonInput();
+        $userId = (int) ($data['user_id'] ?? 0);
+        $currentPassword = (string) ($data['current_password'] ?? '');
+
+        if ($userId <= 0) {
+            Response::json(['error' => 'user_id is required'], 422);
+        }
+        if ($currentPassword === '') {
+            Response::json(['error' => 'current_password is required'], 422);
+        }
+        if ($userId === $adminId) {
+            Response::json(['error' => 'cannot target self'], 422);
+        }
+
+        $adminUser = User::findById($adminId);
+        if (!$adminUser || !password_verify($currentPassword, (string) $adminUser['password'])) {
+            SecurityLogger::log('admin_mutation_bad_password', $adminId, ['target' => $userId]);
+            Response::json(['error' => 'current password is incorrect'], 401);
+        }
+
+        $targetUser = User::findById($userId);
+        if (!$targetUser) {
+            Response::json(['error' => 'user not found'], 404);
+        }
+
+        return ['adminId' => $adminId, 'targetUser' => $targetUser, 'data' => $data];
+    }
+
+    public static function adminForceLogout(): void
+    {
+        ['adminId' => $adminId, 'targetUser' => $targetUser] = self::requireAdminForUserMutation();
+        $userId = (int) $targetUser['id'];
+        try {
+            User::invalidateSessions($userId);
+            User::clearSession($userId);
+            SecurityLogger::log('admin_forced_logout', $userId, ['by_admin' => $adminId]);
+            Response::json(['message' => 'sessions invalidated']);
+        } catch (Throwable $e) {
+            Response::json(['error' => 'could not force logout'], 500);
+        }
+    }
+
+    public static function adminSetBan(): void
+    {
+        ['adminId' => $adminId, 'targetUser' => $targetUser, 'data' => $data] = self::requireAdminForUserMutation();
+        $userId = (int) $targetUser['id'];
+
+        if (!array_key_exists('banned', $data)) {
+            Response::json(['error' => 'banned flag is required'], 422);
+        }
+        $banned = (bool) $data['banned'];
+
+        try {
+            if ($banned) {
+                User::banUser($userId, $adminId);
+                SecurityLogger::log('admin_banned_user', $userId, ['by_admin' => $adminId]);
+                Response::json(['message' => 'user banned']);
+            } else {
+                User::unbanUser($userId);
+                SecurityLogger::log('admin_unbanned_user', $userId, ['by_admin' => $adminId]);
+                Response::json(['message' => 'user unbanned']);
+            }
+        } catch (Throwable $e) {
+            Response::json(['error' => 'could not update ban state'], 500);
+        }
+    }
+
+    /**
+     * Evalúa si el login viene de un país distinto al último legítimo y, si
+     * procede, dispara un email de alerta con dos botones. Todo envuelto en
+     * try/catch: el JWT ya fue emitido al usuario, y cualquier Response::json
+     * de error aquí mataría el script. La alerta es best-effort.
+     */
+    private static function handleLoginLocation(int $userId, string $ip, string $userAgent): void
+    {
+        try {
+            $geo = GeoLocationService::lookup($ip);
+            $countryCode = $geo['country_code'] ?? null;
+            $countryName = $geo['country_name'] ?? null;
+
+            $lastLegitCountry = User::getLastLegitLoginCountry($userId);
+
+            $isNewCountry = $countryCode !== null
+                         && $lastLegitCountry !== null
+                         && $countryCode !== $lastLegitCountry;
+
+            if (!$isNewCountry) {
+                User::recordLoginLocation($userId, $ip, $countryCode, $countryName, $userAgent, 'neutral');
+                return;
+            }
+
+            $alertUrlBase = self::resolveLoginAlertBaseUrl();
+            if ($alertUrlBase === null) {
+                error_log('LOGIN_ALERT_URL_BASE missing, falling back to neutral');
+                User::recordLoginLocation($userId, $ip, $countryCode, $countryName, $userAgent, 'neutral');
+                return;
+            }
+
+            [$plainToken, $tokenHash, $expiresAt] = self::buildLoginAlertToken();
+            User::recordLoginLocation(
+                $userId, $ip, $countryCode, $countryName, $userAgent,
+                'pending', $tokenHash, $expiresAt
+            );
+
+            $user = User::findById($userId);
+            if (!$user) return;
+            $yesUrl = self::appendQuery($alertUrlBase, ['token' => $plainToken, 'decision' => 'me']);
+            $noUrl  = self::appendQuery($alertUrlBase, ['token' => $plainToken, 'decision' => 'not-me']);
+            MailService::sendLoginAlert($user, $countryName, $ip, $yesUrl, $noUrl);
+            SecurityLogger::log('login_alert_sent', $userId, ['country' => $countryCode, 'ip' => $ip]);
+        } catch (Throwable $e) {
+            error_log('LOGIN_ALERT_FAIL user=' . $userId . ' message=' . $e->getMessage());
+        }
+    }
+
+    private static function buildLoginAlertToken(): array
+    {
+        $ttlSeconds = 7 * 24 * 3600;
+        $plainToken = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $plainToken);
+        $expiresAt = date('Y-m-d H:i:s', time() + $ttlSeconds);
+        return [$plainToken, $tokenHash, $expiresAt];
+    }
+
+    /**
+     * URL base de las páginas de confirmación de alerta. Apunta al FRONTEND
+     * (BibliotecaTerror), que recibe el clic del email y hace el POST al
+     * backend. Así la UI es consistente con el resto del portal.
+     */
+    private static function resolveLoginAlertBaseUrl(): ?string
+    {
+        $base = (string) (getenv('LOGIN_ALERT_FRONTEND_URL_BASE') ?: '');
+        if ($base !== '') return $base;
+        $appEnv = strtolower((string) (getenv('APP_ENV') ?: 'local'));
+        return $appEnv === 'local' ? 'http://localhost:5173/confirmar-acceso' : null;
+    }
+
+    private static function appendQuery(string $url, array $params): string
+    {
+        $sep = str_contains($url, '?') ? '&' : '?';
+        return $url . $sep . http_build_query($params);
+    }
+
+    /**
+     * Endpoint público JSON que procesa la decisión del usuario sobre una
+     * alerta de login. La invoca la SPA de BibliotecaTerror tras abrir el link
+     * del email. Respuesta siempre 200 con un campo `state`
+     * (confirmed|rejected|expired|invalid).
+     */
+    public static function confirmLoginLocation(): void
+    {
+        $data = self::getJsonInput();
+        $token = trim((string) ($data['token'] ?? ''));
+        $decision = trim((string) ($data['decision'] ?? ''));
+
+        if ($token === '' || !in_array($decision, ['me', 'not-me'], true)) {
+            Response::json(['state' => 'invalid']);
+        }
+
+        $tokenHash = hash('sha256', $token);
+        $location = User::findLoginLocationByTokenHash($tokenHash);
+
+        $expired = $location
+            && (
+                $location['status'] !== 'pending'
+                || $location['token_used_at'] !== null
+                || strtotime((string) ($location['token_expires_at'] ?? '')) < time()
+            );
+
+        if (!$location || $expired) {
+            Response::json(['state' => 'expired']);
+        }
+
+        $userId = (int) $location['user_id'];
+
+        if ($decision === 'me') {
+            User::updateLoginLocationStatus((int) $location['id'], 'confirmed');
+            SecurityLogger::log('login_location_confirmed', $userId);
+            Response::json(['state' => 'confirmed']);
+        }
+
+        User::updateLoginLocationStatus((int) $location['id'], 'rejected');
+        User::clearSession($userId);
+        User::setRequirePasswordReset($userId, true);
+        SecurityLogger::log('login_location_rejected', $userId, [
+            'ip' => $location['ip'], 'country' => $location['country_code'],
+        ]);
+        Response::json(['state' => 'rejected']);
+    }
+
 }

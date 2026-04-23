@@ -416,6 +416,11 @@ switch ($action) {
             }
 
             // 4. Crear préstamo en espera de reserva ('pendiente' y caducidad Nula)
+            $stmt = $pdo->prepare(
+                "INSERT INTO prestamos (usuario_id, nombre_usuario, libro_id, estado, fecha_devolucion)
+                 VALUES (?, ?, ?, 'pendiente', NULL)"
+            );
+            $stmt->execute([$usuario_id, $nombre_usuario, $libro_id]);
             $new_loan_id = $pdo->lastInsertId();
 
             $pdo->commit();

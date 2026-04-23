@@ -72,6 +72,11 @@ const router = createRouter({
       component: () => import('../pages/ConfirmEmailChangePage.vue')
     },
     {
+      path: '/confirmar-acceso',
+      name: 'confirm-login-location',
+      component: () => import('../pages/ConfirmarAccesoPage.vue')
+    },
+    {
       path: '/restablecer-contrasena',
       name: 'reset-password',
       component: () => import('../pages/ResetPasswordPage.vue'),
