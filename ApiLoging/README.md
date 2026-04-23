@@ -1,6 +1,6 @@
 # ApiLoging
 
-API de autenticacion central del ecosistema Reglado.
+API de autenticacion central del ecosistema Librum Tenebris.
 
 Gestiona:
 - registro con confirmacion por correo
@@ -31,7 +31,7 @@ composer install
 Instalacion limpia:
 
 ```sql
-SOURCE database/create_regladousers.sql;
+SOURCE database/create_bibliouser.sql;
 ```
 
 Base existente:
@@ -107,23 +107,24 @@ Admin:
 
 ## Flujo general
 
-1. Un frontend redirige al usuario a `GrupoReglado`.
-2. `GrupoReglado` llama a `ApiLoging`.
-3. `ApiLoging` emite un JWT.
-4. El frontend de destino usa ese JWT en `Authorization: Bearer <token>`.
-5. Cada backend de producto valida el token por su cuenta.
+1. El frontend (`BibliotecaTerror`) llama a `ApiLoging` para registro/login/etc.
+2. `ApiLoging` emite un JWT.
+3. El frontend usa ese JWT en `Authorization: Bearer <token>`.
+4. Los otros backends del proyecto (p. ej. `libros_api`) validan el token con la misma clave secreta.
 
 ## Archivos importantes
 
-- [index.php](c:\xampp\htdocs\Reglado\ApiLoging\index.php): punto de entrada y enrutado simple.
-- [controllers/AuthController.php](c:\xampp\htdocs\Reglado\ApiLoging\controllers\AuthController.php): flujos de autenticacion y perfil.
-- [middleware/AuthMiddleware.php](c:\xampp\htdocs\Reglado\ApiLoging\middleware\AuthMiddleware.php): validacion de JWT.
-- [models/User.php](c:\xampp\htdocs\Reglado\ApiLoging\models\User.php): acceso a datos.
-- [services/MailService.php](c:\xampp\htdocs\Reglado\ApiLoging\services\MailService.php): envio de correos.
-- [database/create_regladousers.sql](c:\xampp\htdocs\Reglado\ApiLoging\database\create_regladousers.sql): script completo de base de datos.
+- [index.php](./index.php): punto de entrada y enrutado simple.
+- [controllers/AuthController.php](./controllers/AuthController.php): flujos de autenticacion y perfil.
+- [middleware/AuthMiddleware.php](./middleware/AuthMiddleware.php): validacion de JWT.
+- [models/User.php](./models/User.php): acceso a datos.
+- [services/MailService.php](./services/MailService.php): envio de correos.
+- [services/GeoLocationService.php](./services/GeoLocationService.php): lookup de IP a pais para alertas de login.
+- [database/create_bibliouser.sql](./database/create_bibliouser.sql): script completo de base de datos (crea `bibliouser`).
 
 ## Notas de despliegue
 
 - `JWT_SECRET` debe ser el mismo que usen los backends que validan los tokens.
+- `JWT_ISSUER` debe coincidir entre el emisor y todos los verificadores (default: `librum-auth`).
 - `CORS_ALLOWED_ORIGINS` debe incluir todos los frontends del ecosistema.
 - `REDIRECT_ALLOWED_ORIGINS` debe incluir todos los destinos validos de `returnTo`.

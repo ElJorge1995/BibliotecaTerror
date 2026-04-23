@@ -28,7 +28,7 @@ class JwtService
         $now = time();
         $ttl = (int) (getenv('JWT_TTL_SECONDS') ?: 86400);
         $secret = getenv('JWT_SECRET') ?: 'change-this-secret';
-        $issuer = getenv('JWT_ISSUER') ?: 'reglado-auth';
+        $issuer = getenv('JWT_ISSUER') ?: 'librum-auth';
 
         $payload = [
             'iss' => $issuer,
@@ -62,7 +62,7 @@ class JwtService
     public static function verify(string $token): array
     {
         $secret = getenv('JWT_SECRET') ?: 'change-this-secret';
-        $expectedIssuer = getenv('JWT_ISSUER') ?: 'reglado-auth';
+        $expectedIssuer = getenv('JWT_ISSUER') ?: 'librum-auth';
 
         $decoded = (array) JWT::decode($token, new Key($secret, 'HS256'));
 

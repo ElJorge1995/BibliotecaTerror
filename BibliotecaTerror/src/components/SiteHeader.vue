@@ -181,16 +181,16 @@ const userInitial = computed(() => {
             <div v-show="isProfileMenuOpen" class="profile-dropdown">
               <div class="dropdown-header">
                 <span class="user-greeting">Hola, {{ authStore.user.username }}</span>
-                <span v-if="authStore.isAdmin" class="admin-badge">Admin</span>
+                <span v-if="authStore.isAdmin" class="admin-badge">Administrador</span>
               </div>
               <RouterLink to="/favoritos" class="dropdown-link dropdown-link-icon" @click="closeMenus">
                 Mis Favoritos <img :src="favoriteIcon" alt="Favoritos" class="dropdown-svg-icon" />
               </RouterLink>
               <RouterLink to="/prestamos" class="dropdown-link dropdown-link-icon" @click="closeMenus">
-                Mis Préstamos <img :src="calendarIcon" alt="Calendar" class="dropdown-svg-icon" />
+                Mis Préstamos <img :src="calendarIcon" alt="Calendario" class="dropdown-svg-icon" />
               </RouterLink>
               <RouterLink to="/perfil" class="dropdown-link dropdown-link-icon" @click="closeMenus">
-                Configuración <img :src="settingsIcon" alt="Settings" class="dropdown-svg-icon" />
+                Configuración <img :src="settingsIcon" alt="Configuración" class="dropdown-svg-icon" />
               </RouterLink>
               <button class="dropdown-link logout-dropdown-btn" @click="handleLogout">Salir</button>
             </div>

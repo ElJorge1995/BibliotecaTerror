@@ -895,7 +895,7 @@ onMounted(() => {
         @click="handleToggleBan(openActionsUser)">
         {{ openActionsUser.banned_at ? 'Desbanear' : 'Banear' }}
       </button>
-      <button class="action-item action-danger" @click="closeActionsMenu(); confirmDeleteUser(openActionsUser)">
+      <button class="action-item action-danger" @click="confirmDeleteUser(openActionsUser); closeActionsMenu()">
         Dar de baja
       </button>
     </div>

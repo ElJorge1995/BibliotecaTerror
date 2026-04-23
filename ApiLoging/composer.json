@@ -1,6 +1,6 @@
 {
-  "name": "reglado/auth-server",
-  "description": "Raw PHP auth server with JWT and global logout via token revocation",
+  "name": "librum/auth-server",
+  "description": "API de autenticación PHP de Librum Tenebris con JWT y logout global vía revocación de tokens",
   "type": "project",
   "require": {
     "firebase/php-jwt": "^6.11",
