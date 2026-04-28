@@ -65,14 +65,14 @@ const toggleMode = () => {
         <button class="close-button" type="button" @click="emit('close')">X</button>
 
         <template v-if="mode === 'login'">
-          <h2>Iniciar sesion</h2>
+          <h2>Iniciar sesión</h2>
           <p>Accede para guardar listas y recomendaciones.</p>
 
           <div v-if="error" class="error-message">{{ error }}</div>
 
           <form class="auth-form" @submit.prevent="handleLogin">
             <label>
-              Correo electronico
+              Correo electrónico
               <input type="email" v-model="email" placeholder="tu@email.com" required />
             </label>
 
@@ -103,7 +103,7 @@ const toggleMode = () => {
 
           <form class="auth-form" @submit.prevent="handleForgot">
             <label>
-              Correo electronico
+              Correo electrónico
               <input type="email" v-model="email" placeholder="tu@email.com" required />
             </label>
 

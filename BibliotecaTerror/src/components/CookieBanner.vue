@@ -82,7 +82,7 @@ onMounted(() => {
 }
 
 .cookie-btn {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: #fff;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -94,7 +94,7 @@ onMounted(() => {
 }
 
 .cookie-btn:hover {
-  background: #ff6060;
+  background: #dc2626;
   transform: translateY(-2px);
 }
 

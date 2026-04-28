@@ -34,6 +34,10 @@ const props = defineProps({
   isFavorito: {
     type: Boolean,
     default: false
+  },
+  priority: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -69,7 +73,7 @@ const goToDetails = () => {
       <div v-if="rating && Number(rating) > 0" class="global-rating-badge">
         <span class="star-icon">★</span> {{ Number(rating).toFixed(1) }}
       </div>
-      <img v-if="portada" :src="portada" :alt="title" class="cover-img" />
+      <img v-if="portada" :src="portada" :alt="title" class="cover-img" :loading="priority ? 'eager' : 'lazy'" :fetchpriority="priority ? 'high' : 'auto'" />
       <div v-else class="cover-placeholder">
         <span>📖</span>
       </div>

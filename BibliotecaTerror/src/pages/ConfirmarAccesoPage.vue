@@ -167,7 +167,7 @@ h2 {
 }
 
 .btn {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
   border: none;
   padding: 0.75rem 1.4rem;
@@ -177,6 +177,6 @@ h2 {
   transition: background 0.18s ease;
 }
 .btn:hover {
-  background: #f26a6a;
+  background: #dc2626;
 }
 </style>

@@ -241,8 +241,6 @@ const userInitial = computed(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Germania+One&display=swap');
-
 /* ─── Sticky wrapper ──────────────────────────────────────── */
 .header-wrapper {
   position: sticky;
@@ -693,7 +691,7 @@ const userInitial = computed(() => {
 .nav-link {
   color: #97a0b7;
   text-decoration: none;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   font-weight: 500;
   padding: 0.55rem 0.85rem;
   border-bottom: 2px solid transparent;
@@ -757,7 +755,7 @@ const userInitial = computed(() => {
     border-radius: 8px;
     background: #141824;
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   .nav-link:hover {

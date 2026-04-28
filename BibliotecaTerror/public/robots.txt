@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /perfil
+Disallow: /favoritos
+Disallow: /prestamos
+Disallow: /registro
+Disallow: /verificacion-exitosa
+Disallow: /confirmar-cambio-correo
+Disallow: /confirmar-acceso
+Disallow: /restablecer-contrasena
+
+Sitemap: https://librumtenebris.com/sitemap.xml

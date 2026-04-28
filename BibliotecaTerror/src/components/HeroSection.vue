@@ -5,8 +5,6 @@
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Germania+One&display=swap');
-
 .hero-section {
   margin: 2rem auto 2.5rem;
   padding: 3rem;

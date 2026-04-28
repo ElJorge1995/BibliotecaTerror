@@ -9,7 +9,7 @@
       
       <div class="legal-content">
         <h2>1. Información que Recopilamos</h2>
-        <p>Recopilamos únicamente los datos necesarios para gestionar tus reservas literarias. Esto incluye tu nombre de usuario, correo electrónico y el historial de volúmenes malditos que has decido llevarte a casa.</p>
+        <p>Recopilamos únicamente los datos necesarios para gestionar tus reservas literarias. Esto incluye tu nombre de usuario, correo electrónico y el historial de volúmenes malditos que has decidido llevarte a casa.</p>
         
         <h2>2. Uso de la Información</h2>
         <p>Tu información se utiliza exclusivamente para mantener el inventario de la biblioteca al día, contactarte si te excedes del plazo de devolución estipulado (14 días), y mejorar nuestro algoritmo de recomendaciones sombrías basado en tus valoraciones (estrellas).</p>

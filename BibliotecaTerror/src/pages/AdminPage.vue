@@ -128,9 +128,9 @@ const filteredPrestamos = computed(() => {
  */
 const getUserName = (userId) => {
   if (!userId) return 'Usuario Desconocido'
-  if (!users.value || users.value.length === 0) return `User #${userId}`
+  if (!users.value || users.value.length === 0) return `Usuario #${userId}`
   const u = users.value.find(user => user.id === userId)
-  return u ? u.username : `User #${userId}`
+  return u ? u.username : `Usuario #${userId}`
 }
 
 /**
@@ -1015,7 +1015,7 @@ onMounted(() => {
 .retry-btn {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
   border: none;
   border-radius: 6px;
@@ -1024,7 +1024,7 @@ onMounted(() => {
 }
 
 .retry-btn:hover {
-  background: #d64242;
+  background: #dc2626;
 }
 
 .spinner {
@@ -1452,9 +1452,9 @@ onMounted(() => {
 }
 
 .delete-btn-table-text:hover {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
-  border-color: #ed4d4d;
+  border-color: #b91c1c;
 }
 
 .delete-modal {
@@ -1490,11 +1490,11 @@ onMounted(() => {
 }
 
 .delete-confirm-btn {
-  background: #ed4d4d !important;
+  background: #b91c1c !important;
 }
 
 .delete-confirm-btn:hover {
-  background: #ff3b3b !important;
+  background: #dc2626 !important;
   box-shadow: 0 0 15px rgba(237, 77, 77, 0.4);
 }
 
@@ -1725,7 +1725,7 @@ onMounted(() => {
 }
 
 .save-btn {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: #fff;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -1735,7 +1735,7 @@ onMounted(() => {
 }
 
 .save-btn:hover {
-  background: #ff5e5e;
+  background: #dc2626;
 }
 
 .save-btn:disabled {

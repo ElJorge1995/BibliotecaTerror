@@ -390,14 +390,14 @@ const goBack = () => {
 }
 
 .primary-btn {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
   border: none;
   box-shadow: 0 4px 15px rgba(237, 77, 77, 0.3);
 }
 
 .primary-btn:hover:not(:disabled) {
-  background: #ff5e5e;
+  background: #dc2626;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(237, 77, 77, 0.4);
 }
