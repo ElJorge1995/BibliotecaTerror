@@ -74,7 +74,7 @@ const handleRegister = async () => {
   <section class="register-page">
     <div class="register-card">
       <h1>Crear cuenta</h1>
-      <p>Unete a la Librum Tenebris y guarda tus lecturas favoritas.</p>
+      <p>Únete a la Librum Tenebris y guarda tus lecturas favoritas.</p>
       
       <div v-if="successMessage" class="success-message">
         <p>{{ successMessage }}</p>
@@ -102,7 +102,7 @@ const handleRegister = async () => {
         </label>
 
         <label>
-          Correo electronico
+          Correo electrónico
           <input type="email" v-model="formData.email" placeholder="tu@email.com" required />
         </label>
 
@@ -117,13 +117,13 @@ const handleRegister = async () => {
         </label>
 
         <label>
-          Contrasena
-          <input type="password" v-model="formData.password" placeholder="Minimo 6 caracteres" required minlength="6" />
+          Contraseña
+          <input type="password" v-model="formData.password" placeholder="Mínimo 6 caracteres" required minlength="6" />
         </label>
 
         <label>
-          Confirmar contrasena
-          <input type="password" v-model="formData.password_confirmation" placeholder="Repite tu contrasena" required minlength="6" />
+          Confirmar contraseña
+          <input type="password" v-model="formData.password_confirmation" placeholder="Repite tu contraseña" required minlength="6" />
         </label>
 
         <button type="submit" :disabled="loading">

@@ -9,14 +9,13 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 
 // Import Swiper styles
 import 'swiper/css'
-import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import 'swiper/css/effect-coverflow'
 
 // Import required modules
-import { Navigation, Pagination, EffectCoverflow, Autoplay } from 'swiper/modules'
+import { Pagination, EffectCoverflow, Autoplay } from 'swiper/modules'
 
-const modules = [Navigation, Pagination, EffectCoverflow, Autoplay]
+const modules = [Pagination, EffectCoverflow, Autoplay]
 
 const books   = ref([])
 const loading = ref(true)
@@ -76,7 +75,7 @@ onMounted(async () => {
         :modules="modules"
         class="books-swiper"
       >
-        <swiper-slide v-for="book in books" :key="book.id" class="b-slide">
+        <swiper-slide v-for="(book, idx) in books" :key="book.id" class="b-slide">
           <BookCard
             :id="Number(book.id)"
             :title="book.titulo_es || book.titulo"
@@ -84,6 +83,7 @@ onMounted(async () => {
             :portada="book.portada"
             :rating="book.rating"
             :isFavorito="Number(book.is_favorito) === 1"
+            :priority="idx < 3"
             class="large-card"
           />
         </swiper-slide>

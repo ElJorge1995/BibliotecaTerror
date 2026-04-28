@@ -537,7 +537,7 @@ input:disabled { opacity: 0.4; cursor: not-allowed; }
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
   border: none;
 }
@@ -620,9 +620,9 @@ input:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 .delete-btn-new:hover {
-  background: #ef4444;
+  background: #b91c1c;
   color: white;
-  border-color: #ef4444;
+  border-color: #b91c1c;
   box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
 }
 
@@ -712,7 +712,7 @@ input:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 .btn-confirm-delete {
-  background: #ef4444;
+  background: #b91c1c;
   color: white;
   border: none;
   padding: 1rem;

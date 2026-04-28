@@ -305,7 +305,7 @@ const rateBook = async (rent, star) => {
 .empty-state p, .error-container p { color: #97a0b7; margin-bottom: 2rem; }
 
 .explore-btn, .retry-btn {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
   border: none;
   padding: 0.8rem 1.5rem;
@@ -314,7 +314,7 @@ const rateBook = async (rent, star) => {
   cursor: pointer;
   transition: all 0.2s;
 }
-.explore-btn:hover, .retry-btn:hover { background: #ff5e5e; transform: translateY(-2px); }
+.explore-btn:hover, .retry-btn:hover { background: #dc2626; transform: translateY(-2px); }
 
 /* Rating Stars */
 .rating-stars {

@@ -75,7 +75,7 @@ const currentYear = new Date().getFullYear()
   background: rgba(5, 6, 10, 0.85);
   border-top: 1px solid rgba(237, 77, 77, 0.2);
   color: #97a0b7;
-  font-size: 0.875rem;
+  font-size: 1rem;
   padding: 3rem 2rem 0;
   backdrop-filter: blur(8px);
 }
@@ -94,7 +94,7 @@ const currentYear = new Date().getFullYear()
   display: inline-block;
   border: 1px solid rgba(237, 77, 77, 0.5);
   color: #d1d5e0;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   padding: 0.3rem 0.7rem;
@@ -180,7 +180,7 @@ const currentYear = new Date().getFullYear()
   flex-wrap: wrap;
   gap: 0.75rem;
   color: #5c6480;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .footer-bottom p {

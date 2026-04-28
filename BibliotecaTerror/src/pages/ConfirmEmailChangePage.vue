@@ -46,7 +46,7 @@ onMounted(async () => {
     <div class="verify-card">
       <template v-if="status === 'verifying'">
         <h2>Confirmando cambio de correo...</h2>
-        <p>Por favor espera un momento.</p>
+        <p>Por favor, espera un momento.</p>
       </template>
 
       <template v-else-if="status === 'success'">
@@ -105,7 +105,7 @@ p {
 }
 
 .btn {
-  background: #ed4d4d;
+  background: #b91c1c;
   color: white;
   border: none;
   padding: 0.8rem 1.5rem;
@@ -114,6 +114,6 @@ p {
   font-weight: bold;
 }
 .btn:hover {
-  background: #f26a6a;
+  background: #dc2626;
 }
 </style>
