@@ -102,8 +102,11 @@ function translateAuthMessage(code) {
   return AUTH_MESSAGES[key] || code
 }
 
+// baseURL vacío: en producción frontend y backend conviven en el mismo dominio
+// (las rutas /auth/* las sirve public_html/auth/ via .htaccess). En desarrollo,
+// el proxy de Vite (vite.config.js) redirige /auth a http://localhost:8000.
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json'
   }

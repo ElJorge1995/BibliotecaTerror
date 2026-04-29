@@ -1,3 +1,4 @@
 .env
 .agent/
 ApiLoging/data/*.mmdb
+ReleasesEstables/

@@ -11,4 +11,4 @@ Disallow: /confirmar-cambio-correo
 Disallow: /confirmar-acceso
 Disallow: /restablecer-contrasena
 
-Sitemap: https://librumtenebris.com/sitemap.xml
+Sitemap: https://bibliotecaterror.com/sitemap.xml

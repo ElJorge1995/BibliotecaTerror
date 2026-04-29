@@ -2,7 +2,7 @@
 
 Auditoría y correcciones aplicadas al frontend `BibliotecaTerror/` para preparar el proyecto para indexación en buscadores y previews en redes sociales.
 
-> **Nota sobre el dominio**: en todos los ficheros se ha usado el placeholder `https://librumtenebris.com`. Cuando se compre el dominio real en Hostinger, hay que reemplazarlo en los siguientes ficheros mediante buscar/reemplazar:
+> **Nota sobre el dominio**: en todos los ficheros se ha usado el placeholder `https://bibliotecaterror.com`. Cuando se compre el dominio real en Hostinger, hay que reemplazarlo en los siguientes ficheros mediante buscar/reemplazar:
 >
 > - `BibliotecaTerror/index.html`
 > - `BibliotecaTerror/public/robots.txt`
@@ -110,7 +110,7 @@ Imagen creada en `BibliotecaTerror/public/og-image.png` con dimensiones 1424 × 
 
 ### 3.2. Sustituir el dominio placeholder
 
-Cuando se compre el dominio real en Hostinger, hacer un buscar/reemplazar de `librumtenebris.com` por el dominio real en:
+Cuando se compre el dominio real en Hostinger, hacer un buscar/reemplazar de `bibliotecaterror.com` por el dominio real en:
 
 - `BibliotecaTerror/index.html` (10 ocurrencias entre meta tags y JSON-LD)
 - `BibliotecaTerror/public/robots.txt` (1 ocurrencia, en la línea `Sitemap:`)

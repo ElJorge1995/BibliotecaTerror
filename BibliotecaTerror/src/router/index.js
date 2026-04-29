@@ -123,6 +123,12 @@ const router = createRouter({
       name: 'accessibility',
       component: () => import('../pages/AccessibilityPage.vue'),
       meta: { title: `Accesibilidad | ${SITE_NAME}` }
+    },
+    {
+      path: '/equipo',
+      name: 'team',
+      component: () => import('../pages/EquipoPage.vue'),
+      meta: { title: `Equipo | ${SITE_NAME}` }
     }
   ]
 })
