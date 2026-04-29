@@ -1,7 +1,10 @@
 import axios from 'axios'
 
+// baseURL '/api': en producción frontend y backend conviven en el mismo dominio
+// (las rutas /api/* las sirve public_html/api/ — libros_api.php está ahí). En
+// desarrollo el proxy de Vite (vite.config.js) reescribe /api → http://localhost:8080.
 const booksApi = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json'
   }

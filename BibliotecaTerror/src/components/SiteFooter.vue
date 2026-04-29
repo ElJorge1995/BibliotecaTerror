@@ -56,6 +56,8 @@ const currentYear = new Date().getFullYear()
     <div class="footer-bottom">
       <p>© {{ currentYear }} Librum Tenebris. Todos los derechos reservados.</p>
       <div class="footer-bottom-links">
+        <RouterLink to="/equipo">Equipo</RouterLink>
+        <span class="separator">·</span>
         <RouterLink to="/terminos">Términos legales</RouterLink>
         <span class="separator">·</span>
         <RouterLink to="/privacidad">Privacidad</RouterLink>

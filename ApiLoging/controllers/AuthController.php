@@ -738,10 +738,14 @@ class AuthController
 
     private static function hasActiveLoans(int $userId): bool
     {
-        $url = "http://localhost:8080/libros_api.php?action=count_active_loans&usuario_id=" . $userId;
+        // Llamada server-to-server al microservicio de libros. En dev apunta a
+        // localhost:8080; en prod LIBROS_API_URL debe configurarse en .env
+        // (p. ej. https://bibliotecaterror.com/api).
+        $base = getenv('LIBROS_API_URL') ?: 'http://localhost:8080';
+        $url = rtrim($base, '/') . "/libros_api.php?action=count_active_loans&usuario_id=" . $userId;
         $response = @file_get_contents($url);
         if ($response === false) {
-            return false; 
+            return false;
         }
         $data = json_decode($response, true);
         return isset($data['count']) && $data['count'] > 0;

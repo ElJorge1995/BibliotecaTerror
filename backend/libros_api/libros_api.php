@@ -267,7 +267,9 @@ switch ($action) {
                 $dest_path = $upload_dir . $new_filename;
                 
                 if (move_uploaded_file($tmp_name, $dest_path)) {
-                    $portada_url = 'http://localhost:8080/uploads/covers/' . $new_filename;
+                    // Ruta relativa: en dev el proxy de Vite reenvía /api a localhost:8080,
+                    // en prod Apache sirve directamente public_html/api/uploads/covers/.
+                    $portada_url = '/api/uploads/covers/' . $new_filename;
                 } else {
                     http_response_code(500);
                     echo json_encode(['error' => 'Error subiendo la portada']);
@@ -330,7 +332,9 @@ switch ($action) {
                 $dest_path = $upload_dir . $new_filename;
                 
                 if (move_uploaded_file($tmp_name, $dest_path)) {
-                    $portada_url = 'http://localhost:8080/uploads/covers/' . $new_filename;
+                    // Ruta relativa: en dev el proxy de Vite reenvía /api a localhost:8080,
+                    // en prod Apache sirve directamente public_html/api/uploads/covers/.
+                    $portada_url = '/api/uploads/covers/' . $new_filename;
                 } else {
                     http_response_code(500);
                     echo json_encode(['error' => 'Error subiendo la portada']);
