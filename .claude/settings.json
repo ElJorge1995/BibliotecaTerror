@@ -26,7 +26,13 @@
       "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\"c:\\\\Users\\\\sonic\\\\Desktop\\\\FP DAW\\\\Año 2\\\\Proyecto Final\\\\BibliotecaTerror\\\\public\\\\og-image.png\"\\); \"$\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\))",
       "Bash(cp -r 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/BibliotecaTerror/dist/.' 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/ReleasesEstables/v1.0.0_2026-04-28/public_html/')",
       "Bash(rsync -a --exclude=.env --exclude=output.txt --exclude=server_logs.txt --exclude=test_update.php 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/ApiLoging/' 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/ReleasesEstables/v1.0.0_2026-04-28/public_html/auth/')",
-      "Bash(rsync -a --exclude=migration.php --exclude=test_notion.php 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/backend/libros_api/' 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/ReleasesEstables/v1.0.0_2026-04-28/public_html/api/')"
+      "Bash(rsync -a --exclude=migration.php --exclude=test_notion.php 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/backend/libros_api/' 'c:/Users/sonic/Desktop/FP DAW/Año 2/Proyecto Final/ReleasesEstables/v1.0.0_2026-04-28/public_html/api/')",
+      "Bash(rm ApiLoging/database/*.sql)",
+      "Bash(rm backend/database/*.sql)",
+      "Bash(grep -E \"\\\\.\\(sql|md\\)$\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\sonic\\Desktop\\FP DAW\\Año 2\\Proyecto Final"
     ]
   }
 }
