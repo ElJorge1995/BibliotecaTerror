@@ -35,11 +35,11 @@ ApiLoging/
 ├── utils/
 │   ├── Response.php       ← helper JSON
 │   └── Security.php       ← CORS, headers, transporte HTTPS
-├── data/
-│   └── GeoLite2-Country.mmdb ← base offline de países
-└── database/
-    └── migrate_security_upgrade.sql
+└── data/
+    └── GeoLite2-Country.mmdb ← base offline de países
 ```
+
+> Los esquemas SQL ya no viven dentro de `ApiLoging/`. Están centralizados en la carpeta `database/` de la raíz del proyecto (`01_apiloging_schema.sql`).
 
 ### B) `backend/libros_api/` → API del catálogo (puerto 8080)
 
@@ -52,12 +52,12 @@ backend/
 │   ├── conexion.php       ← PDO a `librum-tenebris`
 │   ├── get_title.php      ← endpoint auxiliar
 │   └── uploads/covers/    ← portadas subidas por admin
-├── cargalibros/           ← scripts de importación (Google Books)
-│   ├── importar_libros.php
-│   └── traducir_libros.php
-└── database/
-    └── librum-tenebris_Final.sql
+└── cargalibros/           ← scripts de importación (Google Books)
+    ├── importar_libros.php
+    └── traducir_libros.php
 ```
+
+> El esquema y el seed de `librum-tenebris` viven en la carpeta `database/` de la raíz del proyecto (`02_libros_schema.sql` y `03_libros_seed.sql`).
 
 > **Razón de la separación**: la API de auth (`ApiLoging`) es portable a cualquier proyecto del ecosistema Reglado. La API de libros es específica de Librum Tenebris.
 

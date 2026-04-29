@@ -26,18 +26,10 @@ composer install
 
 2. Crear `ApiLoging/.env` a partir de `ApiLoging/.env.example`.
 
-3. Crear base de datos:
-
-Instalacion limpia:
+3. Crear base de datos (desde la raiz del proyecto, en phpMyAdmin o `mysql -u root -p`):
 
 ```sql
-SOURCE database/create_bibliouser.sql;
-```
-
-Base existente:
-
-```sql
-SOURCE database/schema.sql;
+SOURCE database/01_apiloging_schema.sql;
 ```
 
 4. Arrancar la API:
@@ -120,7 +112,7 @@ Admin:
 - [models/User.php](./models/User.php): acceso a datos.
 - [services/MailService.php](./services/MailService.php): envio de correos.
 - [services/GeoLocationService.php](./services/GeoLocationService.php): lookup de IP a pais para alertas de login.
-- [database/create_bibliouser.sql](./database/create_bibliouser.sql): script completo de base de datos (crea `bibliouser`).
+- [database/01_apiloging_schema.sql](../database/01_apiloging_schema.sql): script completo de base de datos (crea `bibliouser`). Vive en la carpeta `database/` de la raiz del proyecto.
 
 ## Notas de despliegue
 
