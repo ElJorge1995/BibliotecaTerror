@@ -106,7 +106,11 @@ Toda la memoria del TFG está en [`Documentacion/`](Documentacion/):
 - [`TFG-Planificacion.pdf`](Documentacion/TFG-Planificacion.pdf) — planificación temporal.
 - [`anteproyecto_daw.pdf`](Documentacion/anteproyecto_daw.pdf) — anteproyecto inicial.
 
-## Autor
+## Autores
 
 Proyecto desarrollado como Trabajo de Fin de Grado del ciclo de Desarrollo
-de Aplicaciones Web.
+de Aplicaciones Web por:
+
+- **Jorge Núñez Granero**
+- **Alejandro del Campo Ortiz**
+- **Eva María Sánchez Zamora**
