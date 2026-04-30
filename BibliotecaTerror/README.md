@@ -1,5 +1,59 @@
-# Vue 3 + Vite
+# BibliotecaTerror — Frontend de Librum Tenebris
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Frontend SPA de **Librum Tenebris** (TFG del FP DAW). Construido con
+**Vue 3 + Vite**.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Stack
+
+- **Vue 3** (`<script setup>`) + **Vue Router** + **Pinia**
+- **Vite** como build tool y servidor de desarrollo
+- **Axios** para llamadas HTTP a los backends
+- **Swiper** para carruseles del catálogo
+
+## Backends que consume
+
+| Backend | URL desarrollo | Función |
+|---|---|---|
+| ApiLoging | `http://localhost:8000` | Registro, login, JWT, perfil |
+| libros_api | `http://localhost:8080` | Catálogo, fichas y portadas |
+
+Ambos deben estar corriendo (ver el [README raíz](../README.md) del
+proyecto).
+
+## Desarrollo
+
+```bash
+npm install   # solo la primera vez
+npm run dev
+```
+
+Abre [http://localhost:5173](http://localhost:5173).
+
+## Build de producción
+
+```bash
+npm run build      # genera dist/
+npm run preview    # sirve dist/ localmente para verificar
+```
+
+## Estructura
+
+```
+BibliotecaTerror/
+├── public/         # assets estáticos servidos en raíz
+├── src/
+│   ├── assets/     # CSS, fuentes
+│   ├── components/ # componentes reutilizables
+│   ├── img/        # imágenes
+│   ├── layouts/    # layouts de página
+│   ├── media/      # vídeos / multimedia
+│   ├── views/      # vistas asociadas a rutas
+│   ├── App.vue
+│   └── main.js     # entry point
+├── index.html
+├── package.json
+└── vite.config.js
+```
+
+Para arrancar el ecosistema completo (frontend + ambos backends + MySQL),
+consulta el [README del proyecto](../README.md).
