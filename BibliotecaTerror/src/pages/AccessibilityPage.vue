@@ -24,7 +24,7 @@
         <h2>4. Solicitudes y Canal de Contacto</h2>
         <p>Si encuentras alguna barrera de accesibilidad o tienes sugerencias para mejorar tu experiencia utilizando lectores de pantalla, teclados u otros dispositivos de asistencia, por favor háznoslo saber a través de nuestros canales y lo corregiremos con urgencia:</p>
         <ul>
-          <li><strong>Email:</strong> accesibilidad@bibliotecaterror.com</li>
+          <li><strong>Email:</strong> regladoconsultores@gmail.com</li>
           <li><strong>Mensaje:</strong> a través de nuestras redes sociales marcadas en el pie de página.</li>
         </ul>
       </div>
@@ -89,5 +89,38 @@
 
 .legal-content strong {
   color: #d1d5e0;
+}
+
+
+@media (max-width: 768px) {
+  .legal-page {
+    padding: 1.5rem 0.5rem;
+  }
+  .legal-container {
+    padding: 1.5rem 1.2rem;
+    border-radius: 10px;
+  }
+  .legal-title {
+    font-size: 1.5rem;
+  }
+  .legal-content h2 {
+    font-size: 1.15rem;
+    margin-top: 1.8rem;
+  }
+  .legal-content p,
+  .legal-content ul {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .last-updated {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .legal-title {
+    font-size: 1.3rem;
+  }
 }
 </style>

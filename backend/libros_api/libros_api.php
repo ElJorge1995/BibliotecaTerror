@@ -23,10 +23,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/conexion.php';
-require_once __DIR__ . '/../../ApiLoging/config/Env.php';
-require_once __DIR__ . '/../../ApiLoging/services/NotionService.php';
 
-Env::load(__DIR__ . '/../../ApiLoging/.env');
+// Resolver la raíz del backend de auth tanto en producción (Hostinger:
+// public_html/auth/) como en desarrollo local (../../ApiLoging/).
+$auth_root = is_dir(__DIR__ . '/../auth')
+    ? __DIR__ . '/../auth'
+    : __DIR__ . '/../../ApiLoging';
+
+require_once $auth_root . '/config/Env.php';
+require_once $auth_root . '/services/NotionService.php';
+
+Env::load($auth_root . '/.env');
 
 /** @var string $action Control principal de rutas RESTful estáticas */
 $action = $_GET['action'] ?? '';

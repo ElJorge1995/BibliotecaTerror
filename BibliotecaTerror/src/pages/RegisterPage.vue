@@ -118,12 +118,12 @@ const handleRegister = async () => {
 
         <label>
           Contraseña
-          <input type="password" v-model="formData.password" placeholder="Mínimo 6 caracteres" required minlength="6" />
+          <input type="password" v-model="formData.password" placeholder="Mínimo 8 caracteres, mayúscula y número" required minlength="8" />
         </label>
 
         <label>
           Confirmar contraseña
-          <input type="password" v-model="formData.password_confirmation" placeholder="Repite tu contraseña" required minlength="6" />
+          <input type="password" v-model="formData.password_confirmation" placeholder="Repite tu contraseña" required minlength="8" />
         </label>
 
         <button type="submit" :disabled="loading">
@@ -152,6 +152,7 @@ const handleRegister = async () => {
 h1 {
   margin: 0;
   color: #f6f6f7;
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
 }
 
 p {
@@ -183,6 +184,9 @@ input {
   padding: 0.65rem 0.8rem;
   background: #0f121a;
   color: #f0f1f4;
+  font-size: 16px; /* Evita zoom automático en iOS al enfocar */
+  width: 100%;
+  min-width: 0;
 }
 
 input:focus {
@@ -230,5 +234,30 @@ button:disabled {
   border-radius: 8px;
   margin-bottom: 1rem;
   text-align: center;
+}
+
+@media (max-width: 480px) {
+  .register-page {
+    padding: 1rem 0 0.5rem;
+  }
+
+  .register-card {
+    padding: 1.1rem;
+    border-radius: 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .register-form {
+    gap: 0.75rem;
+  }
+
+  button {
+    padding: 0.85rem 0.9rem;
+    font-size: 1rem;
+  }
 }
 </style>

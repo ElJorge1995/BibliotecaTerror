@@ -192,4 +192,59 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(237, 77, 77, 0.4);
 }
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1.2rem 0.5rem 3rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .grid :deep(h3) {
+    font-size: 0.95rem;
+  }
+
+  .empty-state {
+    padding: 2.5rem 1rem;
+  }
+
+  .empty-state h2 {
+    font-size: 1.3rem;
+  }
+
+  .empty-state p {
+    font-size: 0.95rem;
+  }
+
+  .star-icon {
+    font-size: 3.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+}
 </style>

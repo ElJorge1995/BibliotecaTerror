@@ -58,11 +58,11 @@ const handleReset = async () => {
       <form v-if="!success && token" class="reset-form" @submit.prevent="handleReset">
         <label>
           Nueva contraseña
-          <input type="password" v-model="password" required minlength="6" />
+          <input type="password" v-model="password" required minlength="8" />
         </label>
         <label>
           Confirmar nueva contraseña
-          <input type="password" v-model="confirmPassword" required minlength="6" />
+          <input type="password" v-model="confirmPassword" required minlength="8" />
         </label>
         <button type="submit" :disabled="loading">
           {{ loading ? 'Guardando...' : 'Guardar contraseña' }}
@@ -115,6 +115,9 @@ input {
   padding: 0.65rem 0.8rem;
   background: #0f121a;
   color: #f0f1f4;
+  font-size: 16px;
+  width: 100%;
+  min-width: 0;
 }
 
 button {
@@ -143,5 +146,20 @@ button {
   border-radius: 8px;
   text-align: center;
   margin-bottom: 1rem;
+}
+
+@media (max-width: 480px) {
+  .reset-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .reset-card {
+    padding: 1.5rem 1.2rem;
+    border-radius: 10px;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
 }
 </style>

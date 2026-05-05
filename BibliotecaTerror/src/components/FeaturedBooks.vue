@@ -192,4 +192,62 @@ a {
   color: #f09090;
   font-size: 0.9rem;
 }
+
+@media (max-width: 768px) {
+  .featured-books {
+    margin: 1rem 0 2rem;
+  }
+
+  .section-head {
+    margin-bottom: 1.2rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  a {
+    font-size: 0.9rem;
+  }
+
+  .b-slide,
+  .skeleton {
+    width: 200px;
+    height: 380px;
+  }
+
+  .b-slide :deep(h3) {
+    font-size: 1rem;
+  }
+
+  .carousel-container {
+    padding: 0.5rem 0 2rem;
+  }
+
+  .books-swiper {
+    padding-bottom: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  .b-slide,
+  .skeleton {
+    width: 170px;
+    height: 320px;
+  }
+
+  .swiper-skeleton-cont {
+    gap: 1rem;
+  }
+}
 </style>

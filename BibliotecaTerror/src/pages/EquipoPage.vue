@@ -51,7 +51,7 @@ const inicialesDe = (nombre) => {
     <footer class="equipo-foot">
       <p>
         ¿Tienes preguntas sobre el proyecto? Escríbenos a
-        <a href="mailto:contacto@bibliotecaterror.com">contacto@bibliotecaterror.com</a>.
+        <a href="mailto:regladoconsultores@gmail.com">regladoconsultores@gmail.com</a>.
       </p>
     </footer>
   </div>
@@ -170,12 +170,44 @@ const inicialesDe = (nombre) => {
   text-decoration: underline;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .equipo-page {
+    padding: 1.8rem 0.75rem 3rem;
+  }
+  .equipo-hero {
+    margin-bottom: 2rem;
+  }
   .equipo-hero h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
   .equipo-hero .lead {
-    font-size: 1rem;
+    font-size: 0.95rem;
+  }
+  .equipo-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .miembro-card {
+    padding: 1.5rem 1.2rem;
+  }
+  .avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+  }
+  .nombre {
+    font-size: 1.1rem;
+  }
+  .equipo-foot {
+    padding-top: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .equipo-hero h1 {
+    font-size: 1.5rem;
   }
 }
 </style>

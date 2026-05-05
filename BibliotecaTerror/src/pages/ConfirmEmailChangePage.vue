@@ -116,4 +116,24 @@ p {
 .btn:hover {
   background: #dc2626;
 }
+
+@media (max-width: 480px) {
+  .verify-page {
+    padding: 1rem 0.5rem;
+    min-height: calc(100vh - 140px);
+  }
+
+  .verify-card {
+    padding: 1.5rem 1.2rem;
+    border-radius: 10px;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  p {
+    font-size: 0.95rem;
+  }
+}
 </style>

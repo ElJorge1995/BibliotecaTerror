@@ -30,9 +30,26 @@ h1 {
 }
 
 @media (max-width: 768px) {
+  .hero-section {
+    margin: 1.2rem auto 1.5rem;
+    padding: 2rem 1.2rem;
+    border-radius: 12px;
+  }
+
   h1 {
     white-space: normal;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 1.5rem 1rem;
+  }
+
+  h1 {
+    font-size: 1.25rem;
   }
 }
 </style>

@@ -334,4 +334,61 @@ const rateBook = async (rent, star) => {
 .rating-stars:not(.already-rated):not(.is-loading) .star:hover { color: #ffc107; transform: scale(1.2); }
 .rating-stars.already-rated { cursor: default; }
 .rating-stars.is-loading { opacity: 0.5; pointer-events: none; }
+
+@media (max-width: 768px) {
+  .rentals-header {
+    padding: 2rem 1rem 1.5rem;
+  }
+
+  .header-content h1 {
+    font-size: 1.7rem;
+  }
+
+  .header-content p {
+    font-size: 0.95rem;
+  }
+
+  .rentals-content {
+    margin: 1rem auto;
+    padding: 0 0.6rem;
+  }
+
+  .rentals-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content h1 {
+    font-size: 1.4rem;
+  }
+
+  .rental-card {
+    padding: 0.8rem;
+    gap: 0.8rem;
+  }
+
+  .rental-cover-block {
+    width: 70px;
+    height: 105px;
+  }
+
+  .rental-info-block h3 {
+    font-size: 1rem;
+  }
+
+  .rental-info-block .author {
+    margin-bottom: 0.6rem;
+  }
+
+  .rental-meta {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .rating-stars {
+    font-size: 1.3rem;
+  }
+}
 </style>

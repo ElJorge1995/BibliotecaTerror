@@ -134,4 +134,20 @@ h1 {
 .ghost-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.8; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
 .no-results h2 { font-size: 1.5rem; color: #e3e5eb; margin: 0 0 0.5rem; }
 .no-results p { color: #97a0b7; font-size: 1rem; margin: 0; }
+
+@media (max-width: 768px) {
+  .page-container { padding: 1.2rem 0.5rem 3rem; }
+  .page-header { margin-bottom: 1.5rem; padding-bottom: 1rem; }
+  h1 { font-size: 1.6rem; }
+  .search-term { font-size: 0.95rem; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+  .grid :deep(h3) { font-size: 0.95rem; }
+  .no-results { padding: 2.5rem 1rem; }
+  .no-results h2 { font-size: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  h1 { font-size: 1.35rem; }
+}
 </style>

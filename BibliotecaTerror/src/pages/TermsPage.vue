@@ -70,4 +70,37 @@
   color: #8a94ab;
   margin-bottom: 1.5rem;
 }
+
+
+@media (max-width: 768px) {
+  .legal-page {
+    padding: 1.5rem 0.5rem;
+  }
+  .legal-container {
+    padding: 1.5rem 1.2rem;
+    border-radius: 10px;
+  }
+  .legal-title {
+    font-size: 1.5rem;
+  }
+  .legal-content h2 {
+    font-size: 1.15rem;
+    margin-top: 1.8rem;
+  }
+  .legal-content p,
+  .legal-content ul {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .last-updated {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .legal-title {
+    font-size: 1.3rem;
+  }
+}
 </style>

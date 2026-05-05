@@ -183,6 +183,9 @@ input {
   padding: 0.6rem 0.75rem;
   background: #0f121a;
   color: #eceef2;
+  font-size: 16px; /* Evita zoom auto en iOS */
+  width: 100%;
+  min-width: 0;
 }
 
 .submit-button {
@@ -241,5 +244,25 @@ input {
   font-size: 0.9rem;
   padding: 0;
   text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.6rem;
+  }
+
+  .modal-card {
+    padding: 1.3rem 1rem 1.1rem;
+    border-radius: 12px;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  .submit-button {
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
 }
 </style>

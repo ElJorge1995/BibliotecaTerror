@@ -786,7 +786,7 @@ onMounted(() => {
             </div>
             <div class="input-group">
               <label>Contraseña Provisional</label>
-              <input type="password" v-model="userData.password" required placeholder="Mín. 6 caracteres" />
+              <input type="password" v-model="userData.password" required placeholder="Mín. 8 caracteres, mayúscula y número" />
             </div>
             <div class="input-group">
               <label>Rol del Usuario</label>
@@ -1796,5 +1796,125 @@ onMounted(() => {
 
 .actions-menu .action-item.action-success:hover {
   background: rgba(34, 197, 94, 0.12);
+}
+
+/* === Refuerzo mobile (480 / 768) === */
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .admin-title {
+    font-size: 1.7rem;
+  }
+
+  .admin-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .admin-tabs {
+    gap: 0.4rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+  }
+
+  .admin-tabs::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .tab-btn {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .tab-icon-img {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .modal-content {
+    padding: 1.3rem 1rem;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 10px;
+  }
+
+  .modal-content h2 {
+    font-size: 1.3rem;
+    margin: 0 0 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .cell-id {
+    width: 32px;
+    font-size: 0.7rem;
+  }
+
+  .role-select {
+    max-width: 100px;
+    font-size: 0.75rem;
+  }
+
+  .admin-search-input {
+    font-size: 16px; /* Evita zoom auto iOS */
+    padding: 0.6rem 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-title {
+    font-size: 1.4rem;
+  }
+
+  .tab-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .users-table th {
+    font-size: 0.7rem;
+    padding: 0.55rem 0.3rem;
+  }
+
+  .users-table td {
+    padding: 0.55rem 0.3rem;
+  }
+
+  .cell-user strong {
+    font-size: 0.9rem;
+  }
+
+  .full-name {
+    font-size: 0.7rem;
+  }
+
+  .badge,
+  .status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+  }
 }
 </style>
