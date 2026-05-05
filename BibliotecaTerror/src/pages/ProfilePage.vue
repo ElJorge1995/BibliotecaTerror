@@ -721,10 +721,98 @@ input:disabled { opacity: 0.4; cursor: not-allowed; }
   cursor: pointer;
 }
 
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 1.5rem 0.5rem;
+  }
+
+  .profile-main-header {
+    padding: 1.5rem;
+    margin-bottom: 1.8rem;
+    border-radius: 16px;
+  }
+
+  .header-content {
+    gap: 1rem;
+  }
+
+  .user-avatar-large {
+    width: 80px;
+    height: 80px;
+    font-size: 2.4rem;
+    border-radius: 22px;
+  }
+
+  .header-text h2 {
+    font-size: 1.6rem;
+  }
+
+  .user-handle {
+    font-size: 1rem;
+    margin: 0.15rem 0 0.5rem;
+  }
+
+  .settings-sections {
+    gap: 2rem;
+  }
+
+  .settings-card {
+    padding: 1.2rem;
+    border-radius: 14px;
+  }
+
+  .group-header h3 {
+    font-size: 1.15rem;
+  }
+}
+
 @media (max-width: 640px) {
   .header-content { flex-direction: column; text-align: center; }
   .settings-form-row { flex-direction: column; align-items: stretch; }
   .form-row { grid-template-columns: 1fr; }
   .modal-buttons { grid-template-columns: 1fr; }
+  .danger-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+  .logout-btn-new, .delete-btn-new {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-main-header {
+    padding: 1.2rem 1rem;
+  }
+
+  .user-avatar-large {
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
+  }
+
+  .header-text h2 {
+    font-size: 1.35rem;
+  }
+
+  .role-pill {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem;
+  }
+
+  input {
+    padding: 0.75rem 1rem;
+  }
+
+  .action-btn {
+    padding: 0.8rem 1.2rem;
+  }
+
+  .modal-content-premium {
+    padding: 1.8rem 1.3rem;
+    border-radius: 20px;
+    margin: 0 0.5rem;
+  }
 }
 </style>

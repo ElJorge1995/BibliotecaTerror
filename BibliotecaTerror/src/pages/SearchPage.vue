@@ -187,4 +187,47 @@ h1 {
   font-size: 1rem;
   margin: 0;
 }
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1.2rem 0.5rem 3rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .search-term {
+    font-size: 0.95rem;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .grid :deep(h3) {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .no-results {
+    padding: 2.5rem 1rem;
+  }
+}
 </style>

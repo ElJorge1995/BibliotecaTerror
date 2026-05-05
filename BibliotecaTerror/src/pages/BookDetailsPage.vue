@@ -530,4 +530,78 @@ const goBack = () => {
 .back-btn:hover {
   background: #2d3348;
 }
+
+@media (max-width: 768px) {
+  .content-container {
+    padding: 1.5rem 0.5rem 3rem;
+  }
+
+  .book-hero {
+    gap: 1.5rem;
+  }
+
+  .book-cover-col {
+    max-width: 220px;
+  }
+
+  .book-title {
+    font-size: 1.75rem;
+  }
+
+  .book-original-title {
+    font-size: 1rem;
+  }
+
+  .book-author {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .book-badges {
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .book-separator {
+    margin-bottom: 1.5rem;
+  }
+
+  .book-synopsis h3 {
+    font-size: 1.1rem;
+  }
+
+  .description-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .book-actions {
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .primary-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .book-cover-col {
+    max-width: 180px;
+  }
+
+  .book-title {
+    font-size: 1.4rem;
+  }
+
+  .book-author {
+    font-size: 0.95rem;
+  }
+
+  .action-btn {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+}
 </style>

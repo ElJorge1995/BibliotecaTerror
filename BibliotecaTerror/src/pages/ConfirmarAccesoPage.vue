@@ -179,4 +179,35 @@ h2 {
 .btn:hover {
   background: #dc2626;
 }
+
+@media (max-width: 480px) {
+  .confirm-page {
+    padding: 1rem 0.5rem;
+    min-height: calc(100vh - 140px);
+  }
+
+  .confirm-card {
+    padding: 1.5rem 1.2rem;
+    border-radius: 10px;
+  }
+
+  .icon-wrap {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.9rem;
+  }
+
+  .icon-wrap svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  .description {
+    font-size: 0.95rem;
+  }
+}
 </style>

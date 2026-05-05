@@ -26,7 +26,7 @@ const AUTH_MESSAGES = {
   'invalid email': 'El correo no es válido.',
   'invalid spanish phone number format': 'El teléfono no es un número español válido.',
   'passwords do not match': 'Las contraseñas no coinciden.',
-  'password must be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
+  'password too weak': 'La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número.',
   'email or username already exists': 'Ese correo o nombre de usuario ya está en uso.',
   'there is already a pending registration for this email or username': 'Ya hay un registro pendiente con ese correo o usuario. Revisa tu bandeja de entrada.',
   'could not create user': 'No se ha podido crear el usuario.',
@@ -44,7 +44,6 @@ const AUTH_MESSAGES = {
   // ── Reset / cambio de contraseña ──
   'token, new_password and new_password_confirmation are required': 'Rellena todos los campos.',
   'new passwords do not match': 'Las contraseñas nuevas no coinciden.',
-  'new password must be at least 6 characters': 'La contraseña nueva debe tener al menos 6 caracteres.',
   'invalid or expired reset token': 'El enlace de recuperación no es válido o ha caducado.',
   'new password must be different from current password': 'La contraseña nueva debe ser distinta a la actual.',
   'current password is incorrect': 'La contraseña actual no es correcta.',

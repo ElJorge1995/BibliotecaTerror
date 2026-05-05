@@ -45,7 +45,7 @@ const currentYear = new Date().getFullYear()
       <div class="footer-col">
         <div class="footer-badge">CONTACTO</div>
         <address class="footer-contact">
-          <p><strong>Email:</strong> contacto@bibliotecaterror.com</p>
+          <p><strong>Email:</strong> regladoconsultores@gmail.com</p>
           <p><strong>Horario:</strong> Siempre abierto (somos digitales)</p>
         </address>
       </div>
