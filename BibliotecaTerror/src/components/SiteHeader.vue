@@ -249,6 +249,8 @@ const userInitial = computed(() => {
   right: 0;
   z-index: 20;
   width: 100vw;
+  max-width: 100vw;
+  overflow-x: clip; /* Evita scroll horizontal si los hijos rebosan en mobile */
   margin-left: calc(50% - 50vw);
   background: rgba(5, 6, 10, 0.9);
   border-bottom: 1px solid rgba(237, 77, 77, 0.18);
@@ -786,7 +788,13 @@ const userInitial = computed(() => {
 
 @media (max-width: 640px) {
   .site-header {
-    padding: 0.65rem 0.9rem;
+    padding: 0.6rem 0.7rem;
+    gap: 0.5rem;
+  }
+
+  .brand {
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
   .brand-ghost {
@@ -796,10 +804,56 @@ const userInitial = computed(() => {
 
   .brand-title {
     font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-actions {
+    flex: 0 0 auto;
+    gap: 0.4rem;
   }
 
   .search-btn {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-header {
+    padding: 0.55rem 0.5rem;
+    gap: 0.4rem;
+  }
+
+  /* En móvil pequeño, solo el ghost — el texto consume demasiado espacio */
+  .brand-title {
+    display: none;
+  }
+
+  .brand-ghost {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .search-form {
+    padding: 0 0.3rem 0 0.65rem;
+  }
+
+  .search-input {
+    font-size: 16px; /* Evita zoom auto al enfocar en iOS */
+    padding: 0.5rem 0;
+  }
+
+  .admin-link,
+  .avatar-button {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+
+  .admin-icon {
+    width: 18px;
+    height: 18px;
   }
 }
 </style>

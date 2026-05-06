@@ -36,7 +36,8 @@ const currentYear = new Date().getFullYear()
         <div class="footer-badge">NAVEGACIÓN</div>
         <nav class="footer-nav">
           <RouterLink to="/">Inicio</RouterLink>
-          <RouterLink to="/buscar">Colección</RouterLink>
+          <RouterLink to="/buscar">Catálogo</RouterLink>
+          <RouterLink to="/novedades">Novedades</RouterLink>
           <RouterLink to="/recomendaciones">Recomendaciones</RouterLink>
         </nav>
       </div>
