@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import BookCard from './BookCard.vue'
 import booksApi from '../api/books.js'
 import { useAuthStore } from '../stores/auth'
@@ -23,6 +24,23 @@ const error   = ref(null)
 
 const authStore = useAuthStore()
 
+// Coverflow más suave en móvil: los laterales no se hunden tanto y la
+// transición no descoloca los slides cuando hay poco espacio.
+const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const onResize = () => { viewportWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', onResize))
+onUnmounted(() => window.removeEventListener('resize', onResize))
+
+const coverflowEffect = computed(() => {
+  if (viewportWidth.value <= 480) {
+    return { rotate: 0, stretch: 0, depth: 40, modifier: 1, slideShadows: false }
+  }
+  if (viewportWidth.value <= 768) {
+    return { rotate: 0, stretch: 0, depth: 70, modifier: 1.6, slideShadows: true }
+  }
+  return { rotate: 0, stretch: 0, depth: 100, modifier: 2.5, slideShadows: true }
+})
+
 onMounted(async () => {
   try {
     const res = await booksApi.getRecientes(12, authStore.user?.id) // Pedimos 12 para que el carrusel tenga más elementos
@@ -39,7 +57,7 @@ onMounted(async () => {
   <section class="featured-books">
     <div class="section-head">
       <h2>Últimas incorporaciones</h2>
-      <a href="#">Ver todo el catálogo</a>
+      <RouterLink to="/buscar">Ver todo el catálogo</RouterLink>
     </div>
 
     <!-- Estado de carga -->
@@ -60,13 +78,7 @@ onMounted(async () => {
         :centeredSlides="true"
         :slidesPerView="'auto'"
         :loop="true"
-        :coverflowEffect="{
-          rotate: 0,
-          stretch: 0,
-          depth: 100,
-          modifier: 2.5,
-          slideShadows: true,
-        }"
+        :coverflowEffect="coverflowEffect"
         :autoplay="{
           delay: 3000,
           disableOnInteraction: false,
@@ -195,11 +207,11 @@ a {
 
 @media (max-width: 768px) {
   .featured-books {
-    margin: 1rem 0 2rem;
+    margin: 1rem 0 1rem;
   }
 
   .section-head {
-    margin-bottom: 1.2rem;
+    margin-bottom: 1rem;
   }
 
   h2 {
@@ -220,20 +232,30 @@ a {
     font-size: 1rem;
   }
 
+  .b-slide :deep(.info) {
+    padding: 0.7rem 0.8rem;
+  }
+
   .carousel-container {
-    padding: 0.5rem 0 2rem;
+    padding: 0;
   }
 
   .books-swiper {
-    padding-bottom: 36px;
+    padding-top: 6px;
+    padding-bottom: 28px;
   }
 }
 
 @media (max-width: 480px) {
+  .featured-books {
+    margin: 0.5rem 0 0.5rem;
+  }
+
   .section-head {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.4rem;
+    margin-bottom: 0.6rem;
   }
 
   h2 {
@@ -242,12 +264,24 @@ a {
 
   .b-slide,
   .skeleton {
-    width: 170px;
+    width: 180px;
     height: 320px;
+  }
+
+  .b-slide :deep(.info) {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .b-slide :deep(p) {
+    font-size: 0.78rem;
   }
 
   .swiper-skeleton-cont {
     gap: 1rem;
+  }
+
+  .books-swiper {
+    padding-bottom: 24px;
   }
 }
 </style>

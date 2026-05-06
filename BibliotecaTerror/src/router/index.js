@@ -15,6 +15,12 @@ const SITE_NAME = 'Librum Tenebris'
 
 const router = createRouter({
   history: createWebHistory(),
+  // Al navegar entre páginas siempre arriba. Excepción: el botón "atrás" del
+  // navegador restaura la posición previa (savedPosition) si el usuario vuelve.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { top: 0, left: 0 }
+  },
   routes: [
     {
       path: '/',

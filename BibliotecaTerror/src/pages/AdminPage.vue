@@ -111,14 +111,25 @@ const fetchPrestamos = async () => {
 
 const prestamosSearchQuery = ref('')
 
+// Orden por estado: pendientes primero, después activos, devueltos al final.
+// Así en mobile el admin ve directo los préstamos accionables.
+const STATE_ORDER = { pendiente: 0, activo: 1, devuelto: 2 }
+
 const filteredPrestamos = computed(() => {
-  if (!prestamosSearchQuery.value) return prestamos.value
-  const query = prestamosSearchQuery.value.toLowerCase()
-  return prestamos.value.filter(rent => {
-    const userName = (rent.nombre_usuario || getUserName(rent.usuario_id)).toLowerCase()
-    const bookTitle = rent.titulo ? rent.titulo.toLowerCase() : ''
-    const rentId = String(rent.prestamo_id)
-    return userName.includes(query) || bookTitle.includes(query) || rentId.includes(query)
+  const list = !prestamosSearchQuery.value
+    ? prestamos.value
+    : prestamos.value.filter(rent => {
+        const query = prestamosSearchQuery.value.toLowerCase()
+        const userName = (rent.nombre_usuario || getUserName(rent.usuario_id)).toLowerCase()
+        const bookTitle = rent.titulo ? rent.titulo.toLowerCase() : ''
+        const rentId = String(rent.prestamo_id)
+        return userName.includes(query) || bookTitle.includes(query) || rentId.includes(query)
+      })
+
+  return [...list].sort((a, b) => {
+    const orderA = STATE_ORDER[a.estado] ?? 99
+    const orderB = STATE_ORDER[b.estado] ?? 99
+    return orderA - orderB
   })
 })
 
@@ -498,14 +509,14 @@ onMounted(() => {
 
       <!-- Navegación por pestañas -->
       <div class="admin-tabs">
-        <button :class="['tab-btn', { active: activeTab === 'usuarios' }]" @click="activeTab = 'usuarios'">
-          <img :src="personIcon" class="tab-icon-img" alt="Usuarios" /> Usuarios
+        <button :class="['tab-btn', { active: activeTab === 'usuarios' }]" @click="activeTab = 'usuarios'" aria-label="Usuarios">
+          <img :src="personIcon" class="tab-icon-img" alt="" /><span class="tab-label">Usuarios</span>
         </button>
-        <button :class="['tab-btn', { active: activeTab === 'libros' }]" @click="activeTab = 'libros'">
-          <img :src="bookIcon" class="tab-icon-img" alt="Inventario" /> Inventario
+        <button :class="['tab-btn', { active: activeTab === 'libros' }]" @click="activeTab = 'libros'" aria-label="Inventario">
+          <img :src="bookIcon" class="tab-icon-img" alt="" /><span class="tab-label">Inventario</span>
         </button>
-        <button :class="['tab-btn', { active: activeTab === 'prestamos' }]" @click="activeTab = 'prestamos'">
-          <img :src="calendarIcon" class="tab-icon-img" alt="Préstamos" /> Préstamos
+        <button :class="['tab-btn', { active: activeTab === 'prestamos' }]" @click="activeTab = 'prestamos'" aria-label="Préstamos">
+          <img :src="calendarIcon" class="tab-icon-img" alt="" /><span class="tab-label">Préstamos</span>
         </button>
       </div>
     </div>
@@ -530,7 +541,7 @@ onMounted(() => {
             <span class="plus-icon">+</span> Nuevo Usuario
           </button>
         </div>
-        <table class="users-table">
+        <table class="users-table users-table-users">
           <thead>
             <tr>
               <th>ID</th>
@@ -610,7 +621,7 @@ onMounted(() => {
             <span class="plus-icon">+</span> Añadir Libro
           </button>
         </div>
-        <table class="users-table">
+        <table class="users-table users-table-books">
           <thead>
             <tr>
               <th>ID</th>
@@ -664,7 +675,7 @@ onMounted(() => {
             <span class="plus-icon">+</span> Nuevo Préstamo
           </button>
         </div>
-        <table class="users-table">
+        <table class="users-table users-table-loans">
           <thead>
             <tr>
               <th>ID Préstamo</th>
@@ -695,7 +706,11 @@ onMounted(() => {
               <td class="cell-role">
                 <div class="status-controls">
                   <div v-if="rent.estado === 'devuelto'" class="return-date-text">
-                    {{ rent.fecha_entregado ? 'Devuelto el ' + formatDate(rent.fecha_entregado) : 'Desconocida' }}
+                    <template v-if="rent.fecha_entregado">
+                      <span class="return-prefix">Devuelto el </span>
+                      <span class="return-icon" aria-hidden="true">✓ </span>{{ formatDate(rent.fecha_entregado) }}
+                    </template>
+                    <span v-else>Desconocida</span>
                   </div>
 
                   <button v-if="rent.estado === 'pendiente'" @click="handlePrestamoStatusUpdate(rent, 'activo')"
@@ -1269,27 +1284,88 @@ onMounted(() => {
   font-size: 0.8rem;
 }
 
+/* === Tabla USUARIOS — oculta columnas progresivamente === */
 @media (max-width: 1100px) {
-
-  .cell-date,
-  th:nth-child(7) {
+  .users-table-users .cell-date,
+  .users-table-users th:nth-child(8) {
     display: none;
   }
 }
 
 @media (max-width: 950px) {
-
-  .cell-email,
-  th:nth-child(3) {
+  .users-table-users .cell-email,
+  .users-table-users th:nth-child(3) {
     display: none;
   }
 }
 
 @media (max-width: 768px) {
-
-  .cell-dni,
-  th:nth-child(4) {
+  .users-table-users .cell-dni,
+  .users-table-users th:nth-child(4),
+  .users-table-users .cell-status,
+  .users-table-users th:nth-child(7) {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* En móvil pequeño solo: Usuario, Rol y Acciones */
+  .users-table-users .cell-id,
+  .users-table-users th:nth-child(1),
+  .users-table-users .cell-verified,
+  .users-table-users th:nth-child(5) {
+    display: none;
+  }
+
+  .users-table-users .full-name {
+    display: none; /* Ahorrar 2ª línea de cada fila */
+  }
+}
+
+/* === Tabla LIBROS — oculta columnas progresivamente === */
+@media (max-width: 768px) {
+  /* Oculta Autor (3) y Disponibilidad (5) */
+  .users-table-books td:nth-child(3),
+  .users-table-books th:nth-child(3),
+  .users-table-books td:nth-child(5),
+  .users-table-books th:nth-child(5) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Oculta también ID (1) — solo Título, Stock y Acciones */
+  .users-table-books td:nth-child(1),
+  .users-table-books th:nth-child(1) {
+    display: none;
+  }
+}
+
+/* === Tabla PRÉSTAMOS — oculta columnas progresivamente === */
+@media (max-width: 768px) {
+  /* Oculta ID Préstamo (1) y Días Restantes (4) — el botón de Control de
+     Estado tiene prioridad sobre la fecha porque es la acción del admin */
+  .users-table-loans td:nth-child(1),
+  .users-table-loans th:nth-child(1),
+  .users-table-loans td:nth-child(4),
+  .users-table-loans th:nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Oculta también Libro (3) — solo Usuario y Control de Estado */
+  .users-table-loans td:nth-child(3),
+  .users-table-loans th:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-select {
+    max-width: 100%;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.7rem;
   }
 }
 
@@ -1377,6 +1453,25 @@ onMounted(() => {
   color: #97a0b7;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* Por defecto (desktop/tablet): "Devuelto el DD/MM/YYYY" — sin icono */
+.return-icon {
+  display: none;
+}
+
+/* Mobile: "✓ DD/MM/YYYY" — el prefijo se oculta, queda compacto */
+@media (max-width: 768px) {
+  .return-prefix {
+    display: none;
+  }
+  .return-icon {
+    display: inline;
+    color: #4ade80;
+  }
+  .return-date-text {
+    font-size: 0.78rem;
+  }
 }
 
 .status-badge {
@@ -1814,26 +1909,23 @@ onMounted(() => {
   }
 
   .admin-tabs {
-    gap: 0.4rem;
-    overflow-x: auto;
+    gap: 0;
+    overflow-x: visible;
     flex-wrap: nowrap;
-    scrollbar-width: thin;
-  }
-
-  .admin-tabs::-webkit-scrollbar {
-    height: 4px;
   }
 
   .tab-btn {
-    padding: 0.7rem 1rem;
+    flex: 1;
+    justify-content: center;
+    padding: 0.7rem 0.5rem;
     font-size: 0.9rem;
-    flex-shrink: 0;
     white-space: nowrap;
+    gap: 0.4rem;
   }
 
   .tab-icon-img {
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1.2rem;
+    height: 1.2rem;
   }
 
   .modal-content {
@@ -1854,12 +1946,63 @@ onMounted(() => {
     gap: 0.9rem;
   }
 
+  /* Inputs y selects dentro de modales: anchos completos y sin zoom auto en iOS */
+  .modal-content .input-group input,
+  .modal-content .input-group select {
+    width: 100%;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  /* role-select dentro del modal de Nuevo Usuario: la clase tiene max-width:120px,
+     pero en modales debe ocupar todo el ancho del input-group */
+  .modal-content .role-select {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Subida de imagen: en mobile va en bloque, ancho completo y altura recortada */
+  .file-upload-section {
+    width: 100%;
+  }
+
+  .upload-area {
+    width: 100%;
+  }
+
+  .upload-box {
+    width: 100%;
+    height: 140px;
+  }
+
+  .upload-placeholder span {
+    font-size: 1.6rem;
+  }
+
+  /* Lista de sugerencias del autocomplete de libros: tipografía sin zoom auto */
+  .suggestions-list li {
+    font-size: 0.95rem;
+    padding: 0.7rem 1rem;
+  }
+
+  .suggestions-list {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
   .modal-actions {
     flex-direction: column-reverse;
+    padding-top: 1.2rem;
+    margin-top: 1.2rem;
   }
 
   .modal-actions button {
     width: 100%;
+  }
+
+  /* Search input dentro de la barra de acciones: sin zoom auto */
+  .admin-search-input {
+    font-size: 16px;
   }
 
   .users-table th,
@@ -1889,9 +2032,25 @@ onMounted(() => {
     font-size: 1.4rem;
   }
 
+  /* Tabs: solo iconos en móvil pequeño — los 3 tabs ocupan el ancho exacto sin scroll */
   .tab-btn {
-    padding: 0.6rem 0.8rem;
-    font-size: 0.8rem;
+    padding: 0.7rem 0;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-icon-img {
+    width: 1.4rem;
+    height: 1.4rem;
+    opacity: 0.8;
+  }
+
+  .tab-btn.active .tab-icon-img {
+    opacity: 1;
   }
 
   .users-table th {
