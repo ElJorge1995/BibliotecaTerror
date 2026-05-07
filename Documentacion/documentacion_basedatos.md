@@ -35,6 +35,169 @@ Engine: **InnoDB** · Charset: **utf8mb4** · Collation: **utf8mb4_unicode_ci**
 
 ---
 
+## 1.1 Diagrama Entidad-Relación
+
+> El proyecto **no usa claves foráneas cruzadas entre las dos BBDD** (sería técnicamente posible con FEDERATED, pero compromete la portabilidad de `ApiLoging`). El vínculo es **lógico**: `prestamos.usuario_id` y `favoritos.usuario_id` apuntan a `bibliouser.users.id` pero la integridad se valida desde la aplicación, no desde la BD.
+
+### `bibliouser` — autenticación y seguridad
+
+```mermaid
+erDiagram
+    users ||--o{ email_verification_tokens : "verifica email"
+    users ||--o{ email_change_tokens       : "cambia email"
+    users ||--o{ password_reset_tokens     : "resetea password"
+    users ||--o{ login_locations           : "registra logins"
+    users ||--o{ security_events           : "genera eventos"
+    users ||--o{ users                     : "banea (banned_by)"
+
+    users {
+        int id PK
+        varchar(100) username UK "nullable"
+        varchar(255) email UK
+        varchar(255) password "BCRYPT hash"
+        varchar(255) name
+        varchar(20)  dni
+        varchar(50)  role "user|pro|admin"
+        tinyint      is_email_verified
+        datetime     banned_at
+        int          banned_by FK
+        char(64)     current_session_id "JWT jti"
+        datetime     sessions_invalidated_at
+        timestamp    created_at
+    }
+
+    pending_registrations {
+        int id PK
+        varchar(100) username UK
+        varchar(255) email UK
+        varchar(255) password_hash
+        varchar(20)  dni
+        char(64)     token_hash UK
+        datetime     expires_at
+        datetime     used_at
+    }
+
+    email_verification_tokens {
+        int id PK
+        int user_id FK
+        char(64) token_hash UK
+        datetime expires_at
+        datetime used_at
+    }
+
+    email_change_tokens {
+        int id PK
+        int user_id FK
+        varchar(255) new_email
+        char(64) token_hash UK
+        datetime expires_at
+    }
+
+    password_reset_tokens {
+        int id PK
+        int user_id FK
+        char(64) token_hash UK
+        datetime expires_at
+    }
+
+    revoked_tokens {
+        int id PK
+        text     token "JWT completo"
+        char(64) token_hash
+        timestamp revoked_at
+    }
+
+    rate_limits {
+        int id PK
+        char(64) key_hash UK
+        varchar(100) scope_name "login|register|reset|..."
+        int attempts
+        timestamp updated_at
+    }
+
+    security_events {
+        int id PK
+        varchar(100) event_type
+        int user_id FK "nullable"
+        varchar(45) ip_address
+        text context_json
+        timestamp created_at
+    }
+
+    login_locations {
+        int id PK
+        int user_id FK
+        varchar(45) ip
+        char(2) country_code
+        varchar(100) country_name
+        varchar(20) status "neutral|approved|denied"
+        char(64) token_hash
+        datetime token_expires_at
+    }
+```
+
+### `librum-tenebris` — catálogo y préstamos
+
+```mermaid
+erDiagram
+    libros ||--o{ favoritos : "es marcado por"
+    libros ||--o{ prestamos : "se presta como"
+
+    libros {
+        int id PK
+        varchar(100) google_id UK
+        varchar(255) titulo
+        varchar(255) titulo_es "traducción"
+        varchar(255) autor
+        int          stock "default 3"
+        text         descripcion
+        text         descripcion_es
+        varchar(500) portada "URL relativa /api/uploads/..."
+        varchar(100) categoria
+        decimal      rating "media calculada de prestamos"
+    }
+
+    favoritos {
+        int id PK
+        int usuario_id "→ bibliouser.users.id (lógica)"
+        int libro_id FK
+        datetime created_at
+    }
+
+    prestamos {
+        int      id PK
+        int      usuario_id  "→ bibliouser.users.id (lógica)"
+        varchar  nombre_usuario "snapshot del nombre"
+        int      libro_id FK
+        datetime fecha_prestamo
+        datetime fecha_devolucion "+14 días al activar"
+        enum     estado "pendiente|activo|devuelto"
+        int      rating "1-5, valoración del usuario"
+        datetime fecha_entregado
+    }
+```
+
+### Vínculo lógico entre BBDD
+
+```mermaid
+flowchart LR
+    subgraph bibliouser
+        U[users<br/>id, dni, name, role]
+    end
+    subgraph librum-tenebris
+        P[prestamos<br/>usuario_id]
+        F[favoritos<br/>usuario_id]
+    end
+    U -.->|"sin FK física<br/>vínculo en aplicación"| P
+    U -.->|"sin FK física<br/>vínculo en aplicación"| F
+
+    style U fill:#777bb4,color:#fff
+    style P fill:#4479a1,color:#fff
+    style F fill:#4479a1,color:#fff
+```
+
+---
+
 ## 2. TABLA `users`
 
 Es la tabla central de toda la autenticación. Tiene **19 columnas** porque incorpora 5 features de seguridad encima del esquema básico (verificado contra `bibliouser.users` en XAMPP).

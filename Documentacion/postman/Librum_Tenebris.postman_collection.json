@@ -1,0 +1,529 @@
+{
+  "info": {
+    "name": "Librum Tenebris — API completa",
+    "description": "Colección de pruebas de los dos backends de Librum Tenebris (TFG FP DAW): ApiLoging (auth/JWT) y libros_api (catálogo y préstamos). Incluye script de login que rellena automáticamente las variables {{jwt}} y {{usuario_id}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "librum-tenebris-tfg-2026"
+  },
+  "variable": [
+    { "key": "auth_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "api_url", "value": "http://localhost:8080", "type": "string" },
+    { "key": "jwt", "value": "", "type": "string" },
+    { "key": "usuario_id", "value": "", "type": "string" },
+    { "key": "test_email", "value": "pruebatfgnormal@gmail.com", "type": "string" },
+    { "key": "test_password", "value": "Admin123456", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "ApiLoging — Autenticación",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{auth_url}}/auth/register", "host": ["{{auth_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"usuario_demo\",\n  \"email\": \"demo+{{$timestamp}}@example.com\",\n  \"password\": \"DemoPass123\",\n  \"first_name\": \"Demo\",\n  \"last_name\": \"User\",\n  \"dni\": \"00000000T\",\n  \"phone\": \"+34600000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login (rellena {{jwt}} y {{usuario_id}})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('jwt', json.token);",
+                  "    console.log('JWT guardado en {{jwt}}');",
+                  "}",
+                  "if (json.user && json.user.id) {",
+                  "    pm.collectionVariables.set('usuario_id', json.user.id);",
+                  "    console.log('usuario_id guardado:', json.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{auth_url}}/auth/login", "host": ["{{auth_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+            "url": { "raw": "{{auth_url}}/auth/me", "host": ["{{auth_url}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+            "url": { "raw": "{{auth_url}}/auth/logout", "host": ["{{auth_url}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "POST /auth/request-password-reset",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{auth_url}}/auth/request-password-reset", "host": ["{{auth_url}}"], "path": ["auth", "request-password-reset"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{test_email}}\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/resend-verification",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{auth_url}}/auth/resend-verification", "host": ["{{auth_url}}"], "path": ["auth", "resend-verification"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{test_email}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ApiLoging — Perfil (autenticado)",
+      "item": [
+        {
+          "name": "POST /auth/update-username",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/update-username", "host": ["{{auth_url}}"], "path": ["auth", "update-username"] },
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"nuevo_username\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/update-name",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/update-name", "host": ["{{auth_url}}"], "path": ["auth", "update-name"] },
+            "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Nuevo\",\n  \"last_name\": \"Apellido\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/update-phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/update-phone", "host": ["{{auth_url}}"], "path": ["auth", "update-phone"] },
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+34611111111\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/change-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/change-password", "host": ["{{auth_url}}"], "path": ["auth", "change-password"] },
+            "body": { "mode": "raw", "raw": "{\n  \"current_password\": \"{{test_password}}\",\n  \"new_password\": \"NuevaPass123\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/request-email-change",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/request-email-change", "host": ["{{auth_url}}"], "path": ["auth", "request-email-change"] },
+            "body": { "mode": "raw", "raw": "{\n  \"new_email\": \"nuevo+{{$timestamp}}@example.com\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/delete-me",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/delete-me", "host": ["{{auth_url}}"], "path": ["auth", "delete-me"] },
+            "body": { "mode": "raw", "raw": "{\n  \"password\": \"{{test_password}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ApiLoging — Admin",
+      "item": [
+        {
+          "name": "GET /auth/admin/users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+            "url": { "raw": "{{auth_url}}/auth/admin/users", "host": ["{{auth_url}}"], "path": ["auth", "admin", "users"] }
+          }
+        },
+        {
+          "name": "POST /auth/admin/update-role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/admin/update-role", "host": ["{{auth_url}}"], "path": ["auth", "admin", "update-role"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 2,\n  \"role\": \"pro\"\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/admin/set-ban",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/admin/set-ban", "host": ["{{auth_url}}"], "path": ["auth", "admin", "set-ban"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 2,\n  \"banned\": true\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/admin/force-logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/admin/force-logout", "host": ["{{auth_url}}"], "path": ["auth", "admin", "force-logout"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 2\n}" }
+          }
+        },
+        {
+          "name": "POST /auth/admin/delete-user",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{auth_url}}/auth/admin/delete-user", "host": ["{{auth_url}}"], "path": ["auth", "admin", "delete-user"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 999\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "libros_api — Catálogo",
+      "item": [
+        {
+          "name": "GET ?action=recientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=recientes&limit=8&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "recientes" },
+                { "key": "limit", "value": "8" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?action=recomendaciones",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=recomendaciones&limit=32&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "recomendaciones" },
+                { "key": "limit", "value": "32" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?action=buscar",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=buscar&q=dracula&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "buscar" },
+                { "key": "q", "value": "dracula" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?action=todos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=todos&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "todos" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?action=obtener&id=1",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=obtener&id=1",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "obtener" },
+                { "key": "id", "value": "1" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "libros_api — Favoritos",
+      "item": [
+        {
+          "name": "POST ?action=toggle_favorito",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=toggle_favorito",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "toggle_favorito" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"usuario_id\": {{usuario_id}},\n  \"libro_id\": 1\n}" }
+          }
+        },
+        {
+          "name": "GET ?action=check_favorito",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=check_favorito&usuario_id={{usuario_id}}&libro_id=1",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "check_favorito" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" },
+                { "key": "libro_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?action=mis_favoritos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=mis_favoritos&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "mis_favoritos" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "libros_api — Préstamos",
+      "item": [
+        {
+          "name": "GET ?action=count_active_loans",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=count_active_loans&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "count_active_loans" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?action=mis_prestamos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=mis_prestamos&usuario_id={{usuario_id}}",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [
+                { "key": "action", "value": "mis_prestamos" },
+                { "key": "usuario_id", "value": "{{usuario_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST ?action=prestar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=prestar",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "prestar" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"usuario_id\": {{usuario_id}},\n  \"libro_id\": 1,\n  \"nombre_usuario\": \"Demo\"\n}" }
+          }
+        },
+        {
+          "name": "POST ?action=actualizar_prestamo (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=actualizar_prestamo",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "actualizar_prestamo" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"prestamo_id\": 1,\n  \"estado\": \"activo\"\n}" }
+          }
+        },
+        {
+          "name": "POST ?action=valorar_prestamo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=valorar_prestamo",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "valorar_prestamo" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"prestamo_id\": 1,\n  \"rating\": 5\n}" }
+          }
+        },
+        {
+          "name": "GET ?action=todos_prestamos (admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=todos_prestamos",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "todos_prestamos" }]
+            }
+          }
+        },
+        {
+          "name": "POST ?action=admin_crear_prestamo (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=admin_crear_prestamo",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "admin_crear_prestamo" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"dni\": \"12345678A\",\n  \"libro_titulo\": \"Drácula\",\n  \"fecha_devolucion\": \"2026-06-01\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "libros_api — Admin CRUD libros",
+      "item": [
+        {
+          "name": "POST ?action=crear (multipart)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=crear",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "crear" }]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "google_id", "value": "9788437604947", "type": "text" },
+                { "key": "titulo", "value": "Drácula", "type": "text" },
+                { "key": "autor", "value": "Bram Stoker", "type": "text" },
+                { "key": "stock", "value": "5", "type": "text" },
+                { "key": "categoria", "value": "Terror clásico", "type": "text" },
+                { "key": "portada", "type": "file", "src": [] }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST ?action=editar_libro (multipart)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{api_url}}/libros_api.php?action=editar_libro",
+              "host": ["{{api_url}}"],
+              "path": ["libros_api.php"],
+              "query": [{ "key": "action", "value": "editar_libro" }]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "id", "value": "1", "type": "text" },
+                { "key": "google_id", "value": "9788437604947", "type": "text" },
+                { "key": "titulo", "value": "Drácula (edición revisada)", "type": "text" },
+                { "key": "autor", "value": "Bram Stoker", "type": "text" },
+                { "key": "stock", "value": "8", "type": "text" },
+                { "key": "categoria", "value": "Terror clásico", "type": "text" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
