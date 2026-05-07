@@ -236,6 +236,20 @@ Toda la memoria del TFG está en [`Documentacion/`](Documentacion/):
 - [`TFG-Planificacion.pdf`](Documentacion/TFG-Planificacion.pdf) — planificación temporal.
 - [`anteproyecto_daw.pdf`](Documentacion/anteproyecto_daw.pdf) — anteproyecto inicial.
 
+## Capturas y manual de usuario
+
+Las **capturas de la interfaz** y el **manual de usuario** completo (con
+guías paso a paso para visitante, usuario y administrador) se encuentran
+en la **memoria del TFG** entregada como parte de la documentación
+académica del proyecto.
+
+> Si quieres probar la aplicación directamente, abre la
+> [demo en producción](https://mediumvioletred-grouse-788941.hostingersite.com)
+> y regístrate con un email real — el flujo de registro, verificación de
+> correo y login es totalmente funcional. Para acceder a las funcionalidades
+> de administración (panel de carga, gestión de usuarios y préstamos), las
+> credenciales se facilitan al tribunal en el acto de defensa.
+
 ## Autores
 
 Proyecto desarrollado como Trabajo de Fin de Grado del ciclo de Desarrollo
