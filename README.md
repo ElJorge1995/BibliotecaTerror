@@ -114,11 +114,18 @@ Antes de arrancar el proyecto necesitas instalar:
 
 ## Cómo arrancarlo
 
+> **Convención de los bloques de código**: cada bloque indica explícitamente
+> el shell esperado (`bash`, `powershell`, `cmd` o `sql`). Donde el comando
+> diverge entre Git Bash (Linux/macOS) y consolas nativas de Windows, se
+> incluyen las dos versiones.
+
 ### 1. Base de datos
 
-Arranca **MySQL desde el Control Panel de XAMPP** y ejecuta el instalador:
+Arranca **MySQL desde el Control Panel de XAMPP** y ejecuta el instalador
+desde la consola de MySQL (o desde phpMyAdmin → Importar):
 
 ```sql
+-- Cliente MySQL / phpMyAdmin
 SOURCE database/install_databases.sql;
 ```
 
@@ -130,6 +137,8 @@ el catálogo) y carga el seed inicial.
 Lanza los tres servicios en este orden, con una pequeña pausa entre cada
 uno. Cada `&` envía el proceso a background y los logs van a `/tmp/`:
 
+**Bash / Git Bash** (Windows con Git for Windows, Linux o macOS):
+
 ```bash
 cd "ApiLoging" && php -S localhost:8000 > /tmp/libratenebris_01_apiloging.log 2>&1 &
 sleep 1
@@ -139,6 +148,18 @@ cd "BibliotecaTerror" && npm run dev > /tmp/libratenebris_03_vite.log 2>&1 &
 sleep 3
 ```
 
+**PowerShell** (Windows — equivalente con `Start-Process` en background):
+
+```powershell
+$logs = $env:TEMP
+Start-Process php -ArgumentList '-S','localhost:8000' -WorkingDirectory 'ApiLoging' -RedirectStandardOutput "$logs\libratenebris_01_apiloging.log" -RedirectStandardError "$logs\libratenebris_01_apiloging.err" -WindowStyle Hidden
+Start-Sleep 1
+Start-Process php -ArgumentList '-S','localhost:8080','-t','backend/libros_api' -RedirectStandardOutput "$logs\libratenebris_02_libros.log" -RedirectStandardError "$logs\libratenebris_02_libros.err" -WindowStyle Hidden
+Start-Sleep 1
+Start-Process npm -ArgumentList 'run','dev' -WorkingDirectory 'BibliotecaTerror' -RedirectStandardOutput "$logs\libratenebris_03_vite.log" -RedirectStandardError "$logs\libratenebris_03_vite.err" -WindowStyle Hidden
+Start-Sleep 3
+```
+
 > Si es la primera vez, ejecuta `npm install` dentro de `BibliotecaTerror/`
 > antes del paso del frontend.
 
@@ -146,10 +167,27 @@ sleep 3
 
 Comprueba que los tres servicios responden:
 
+**Bash / Git Bash**:
+
 ```bash
 curl -s -o /dev/null -w "ApiLoging  /auth/me  : HTTP %{http_code}\n" http://localhost:8000/auth/me
 curl -s -o /dev/null -w "libros_api recientes : HTTP %{http_code}\n" "http://localhost:8080/libros_api.php?action=recientes&limit=1"
 curl -s -o /dev/null -w "Vite       /         : HTTP %{http_code}\n" http://localhost:5173/
+```
+
+**PowerShell** (usa `Invoke-WebRequest` en vez de `curl` para evitar el alias por defecto):
+
+```powershell
+@(
+  @{ Nombre='ApiLoging  /auth/me '; Url='http://localhost:8000/auth/me' },
+  @{ Nombre='libros_api recientes'; Url='http://localhost:8080/libros_api.php?action=recientes&limit=1' },
+  @{ Nombre='Vite       /        '; Url='http://localhost:5173/' }
+) | ForEach-Object {
+  try {
+    $r = Invoke-WebRequest -Uri $_.Url -UseBasicParsing -SkipHttpErrorCheck
+    "$($_.Nombre): HTTP $($r.StatusCode)"
+  } catch { "$($_.Nombre): HTTP $($_.Exception.Response.StatusCode.value__)" }
+}
 ```
 
 Códigos esperados:
@@ -164,14 +202,36 @@ Una vez verificado, abre [http://localhost:5173](http://localhost:5173).
 
 ### 4. Cómo parar todo
 
+**Bash / Git Bash** (el doble `//` es Git Bash-específico, escapa el slash):
+
 ```bash
 taskkill //F //IM php.exe
 taskkill //F //IM node.exe
 ```
 
+**PowerShell** (forma idiomática):
+
+```powershell
+Get-Process php  -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+**CMD** (Windows nativo, slash sencillo):
+
+```cmd
+taskkill /F /IM php.exe
+taskkill /F /IM node.exe
+```
+
 > Esto mata **todos** los procesos PHP y Node del sistema. Si tienes otros
-> proyectos corriendo, párelos selectivamente con `taskkill //PID <pid> //F`
-> usando los PIDs de `netstat -ano | findstr LISTENING`.
+> proyectos corriendo, párelos selectivamente por PID:
+>
+> ```cmd
+> :: CMD/PowerShell — listar PIDs en escucha
+> netstat -ano | findstr LISTENING
+> :: Después matar el PID concreto
+> taskkill /PID <pid> /F
+> ```
 
 ## Modo producción (build) — pruebas reales de SEO
 
@@ -182,6 +242,9 @@ sitemap o robots de forma realista hay que servir el **build de
 producción**.
 
 ### 1. Compilar el frontend
+
+Funciona en **cualquier shell** (Bash, PowerShell o CMD) — `npm` es
+multiplataforma:
 
 ```bash
 cd "BibliotecaTerror"
