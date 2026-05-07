@@ -215,22 +215,37 @@ MAIL_FROM_NAME=Librum Tenebris
 
 ### 9.2. `conexion.php` de `api/` (BBDD 2: libros)
 
-Heredar del release anterior:
+> **A partir de la release V1 del 2026-05-07**, `conexion.php` es
+> **env-driven** y NO se hereda del release anterior. Se copia el del
+> código fuente (`backend/libros_api/conexion.php`) tal cual — ya no
+> contiene credenciales hardcoded.
 
 ```bash
-cp "$PREV/public_html/api/conexion.php" "$REL/public_html/api/conexion.php"
+# Esto ya lo hace el bloque del paso 8. NO sobrescribir con el del PREV.
+cp "$SRC/backend/libros_api/conexion.php" "$REL/public_html/api/"
 ```
 
-Contenido esperado:
+`conexion.php` lee las credenciales de `LIBROS_DB_*` del `.env` central
+de `auth/`. Para que funcione en producción **hay que añadir estas 5
+líneas a `public_html/auth/.env`** (heredado del release anterior):
 
-```php
-<?php
-$host    = "localhost";
-$db      = "u238278696_jorgeLibros";
-$user    = "u238278696_jorge2";
-$pass    = "<contraseña real de la BBDD de libros>";
-$charset = "utf8mb4";
+```env
+# ---- BD del catálogo (libros_api) ----
+LIBROS_DB_HOST=localhost
+LIBROS_DB_PORT=3306
+LIBROS_DB_NAME=u238278696_jorgeLibros
+LIBROS_DB_USER=u238278696_jorge2
+LIBROS_DB_PASS=<contraseña real de la BBDD de libros>
 ```
+
+Si las vars `LIBROS_DB_*` no están definidas, `conexion.php` cae a
+fallbacks de XAMPP (`localhost`/`librum-tenebris`/`root`/sin password)
+que NO funcionarán en Hostinger → **error 500 al cargar el catálogo**.
+
+> **Migrando desde una release anterior a la V1 del 2026-05-07**: si tu
+> `.env` de producción todavía no tenía las `LIBROS_DB_*`, añádelas en
+> hPanel → Administrador de archivos → `public_html/auth/.env` antes (o
+> justo después) de subir esta nueva release.
 
 ---
 
@@ -381,7 +396,8 @@ Las portadas físicas (PNG) están en `public_html/api/uploads/covers/` del ZIP.
 | 404 al refrescar `/buscar` | SPA fallback no funciona | Revisar `public_html/.htaccess` (los archivos ocultos a veces se filtran al subir) |
 | Frontend pide a `localhost:8000` | Build viejo en caché | Hard refresh (Ctrl+F5), vaciar caché del navegador |
 | `/auth/*` da 500 | Falta `.env` o credenciales BBDD mal | Revisar `public_html/auth/.env`. Mirar log de errores PHP en hPanel |
-| `/api/libros_api.php` da 500 | `conexion.php` mal configurado o `libros_api.php` antiguo (V1) | Verificar credenciales en `conexion.php`. Si es la V1, ese archivo tenía un bug — usar V2+ |
+| `/api/libros_api.php` da 500 con "Error de conexión" (releases ≥ V1 2026-05-07) | Faltan las `LIBROS_DB_*` en `auth/.env` — `conexion.php` cae a fallbacks de XAMPP que no aplican en Hostinger | Añadir las 5 líneas `LIBROS_DB_*` al `.env` (ver sección 9.2) |
+| `/api/libros_api.php` da 500 (releases anteriores) | `conexion.php` mal configurado o `libros_api.php` antiguo | Verificar credenciales en `conexion.php`. Si es la V1 antigua, ese archivo tenía un bug — usar V2+ |
 | Composer dependencies missing | `vendor/` no se subió completo | Resubir `auth/vendor/` por SFTP, o vía SSH `cd auth && composer install --no-dev` |
 | Mails no llegan | SMTP mal configurado | Revisar `MAIL_*` en `.env`. Para Gmail usar app password (16 chars) — no la contraseña normal |
 | Imágenes de libros con `localhost:8080` | Portadas subidas en local antes del despliegue | Ejecutar el UPDATE de la sección 15.1 |
@@ -395,7 +411,7 @@ Las portadas físicas (PNG) están en `public_html/api/uploads/covers/` del ZIP.
 - [ ] `vendor/` de `ApiLoging` instalado
 - [ ] `.env` con `JWT_SECRET` real (no `change-this-secret`)
 - [ ] `.env` con CORS apuntando al dominio real
-- [ ] `conexion.php` con la contraseña de la BBDD de libros
+- [ ] `.env` con las 5 vars `LIBROS_DB_*` añadidas (desde V1 2026-05-07 — ver sección 9.2)
 - [ ] `.htaccess` raíz, `auth/.htaccess` y `api/.htaccess` presentes
 - [ ] No queda `bibliotecaterror.com` en ningún archivo (`grep -rl`)
 - [ ] SQLs en `database/` (los 3: auth, libros, seed)
@@ -427,7 +443,10 @@ cp "$SRC/backend/libros_api/conexion.php" "$REL/public_html/api/"
 cp "$SRC/backend/libros_api/libros_api.php" "$REL/public_html/api/"
 cp "$SRC/backend/libros_api/get_title.php" "$REL/public_html/api/"
 cp "$PREV/public_html/api/.htaccess" "$REL/public_html/api/.htaccess"
-cp "$PREV/public_html/api/conexion.php" "$REL/public_html/api/conexion.php"
+# NOTA: ya NO se sobrescribe conexion.php con el del PREV. Desde la
+# release V1 del 2026-05-07 conexion.php es env-driven y se usa el del
+# código fuente. Recordar añadir LIBROS_DB_* al .env de producción
+# (ver sección 9.2).
 cp -r "$SRC/backend/libros_api/uploads/covers/." "$REL/public_html/api/uploads/covers/" 2>/dev/null
 
 cp "$PREV/database/01_auth_tables.sql" "$REL/database/"

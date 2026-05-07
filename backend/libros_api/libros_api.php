@@ -608,10 +608,16 @@ switch ($action) {
         try {
             $pdo->beginTransaction();
 
-            // 1. Buscar usuario por DNI en la db 'bibliouser'
-            // Usamos una conexión temporal para no interferir con la principal
-            $dsn_user = "mysql:host=localhost;dbname=bibliouser;charset=utf8mb4";
-            $pdo_user = new PDO($dsn_user, "root", "");
+            // 1. Buscar usuario por DNI en la BD de auth.
+            // Conexión temporal usando las variables DB_* del .env central
+            // de ApiLoging (con fallback al default de XAMPP).
+            $auth_host = getenv('DB_HOST') ?: 'localhost';
+            $auth_port = getenv('DB_PORT') ?: '3306';
+            $auth_db   = getenv('DB_NAME') ?: 'bibliouser';
+            $auth_user = getenv('DB_USER') ?: 'root';
+            $auth_pass = getenv('DB_PASS') ?: '';
+            $dsn_user  = "mysql:host=$auth_host;port=$auth_port;dbname=$auth_db;charset=utf8mb4";
+            $pdo_user  = new PDO($dsn_user, $auth_user, $auth_pass);
             $pdo_user->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             $stmt = $pdo_user->prepare("SELECT id, name FROM users WHERE dni = ?");

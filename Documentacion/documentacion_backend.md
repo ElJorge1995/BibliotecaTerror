@@ -49,7 +49,7 @@ Un único archivo [`libros_api.php`](../backend/libros_api/libros_api.php) que a
 backend/
 ├── libros_api/
 │   ├── libros_api.php     ← router principal por ?action=
-│   ├── conexion.php       ← PDO a `librum-tenebris`
+│   ├── conexion.php       ← PDO a `librum-tenebris` (env-driven, comparte `.env` con ApiLoging)
 │   ├── get_title.php      ← endpoint auxiliar
 │   └── uploads/covers/    ← portadas subidas por admin
 └── cargalibros/           ← scripts de importación (Google Books)
@@ -80,6 +80,13 @@ $pdo = new PDO($dsn, $user, $pass, [
 - `ERRMODE_EXCEPTION`: cualquier error PDO lanza `PDOException` y se gestiona arriba con `try/catch`.
 - `charset=utf8mb4`: emojis y caracteres internacionales sin pérdida.
 - Credenciales por **variables de entorno** (`DB_HOST`, `DB_NAME`, etc.) cargadas desde `.env`.
+
+> **Configuración unificada de BD desde mayo de 2026** (release V1 del 2026-05-07): tanto `ApiLoging/config/Database.php` (BD `bibliouser`) como `backend/libros_api/conexion.php` (BD `librum-tenebris`) leen sus credenciales del **mismo `.env` central** (`ApiLoging/.env`):
+>
+> - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` → BD de auth.
+> - `LIBROS_DB_HOST`, `LIBROS_DB_PORT`, `LIBROS_DB_NAME`, `LIBROS_DB_USER`, `LIBROS_DB_PASS` → BD de catálogo.
+>
+> El bloque PDO temporal del endpoint `admin_crear_prestamo` (que conecta a la BD de auth para resolver usuarios por DNI) también usa las `DB_*` del mismo `.env`. **Cero credenciales hardcoded en código fuente.** Si alguna de las nuevas `LIBROS_DB_*` no está definida, `conexion.php` cae a fallbacks de XAMPP (`localhost`/`librum-tenebris`/`root`/sin password) para que el proyecto siga funcionando out-of-the-box en desarrollo recién clonado.
 
 ### Consultas preparadas (clave anti-SQL injection)
 
