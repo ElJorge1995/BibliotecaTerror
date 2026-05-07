@@ -1,5 +1,13 @@
 # Librum Tenebris — Proyecto Final FP DAW
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883?logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-7.3-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![PHP 8](https://img.shields.io/badge/PHP-8.0%2B-777bb4?logo=php&logoColor=white)](https://www.php.net/)
+[![MySQL](https://img.shields.io/badge/MySQL-8-4479a1?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Estado](https://img.shields.io/badge/estado-en%20producci%C3%B3n-success)](https://mediumvioletred-grouse-788941.hostingersite.com)
+[![TFG](https://img.shields.io/badge/TFG-FP%20DAW-blueviolet)](Documentacion/)
+
 Trabajo de Fin de Grado del ciclo **DAW** (Desarrollo de Aplicaciones Web).
 Una biblioteca digital especializada en literatura de terror, con
 autenticación centralizada, catálogo de libros y panel de carga.
@@ -25,6 +33,59 @@ autenticación centralizada, catálogo de libros y panel de carga.
 **Backend** — PHP 8 (arquitectura MVC), JWT para autenticación.
 **Base de datos** — MySQL (dos bases: `bibliouser` y `librum-tenebris`).
 **Entorno de desarrollo** — XAMPP (Apache + MySQL).
+
+## Arquitectura del sistema
+
+El frontend SPA consume **dos backends PHP independientes** (auth y catálogo)
+que persisten en **dos bases de datos MySQL separadas**. Esta separación
+permite reutilizar `ApiLoging` en otros proyectos del ecosistema sin
+arrastrar tablas de catálogo.
+
+```mermaid
+flowchart LR
+    subgraph Cliente["🌐 Cliente"]
+        B[Navegador<br/>Chrome / Firefox / Edge]
+    end
+
+    subgraph Frontend["📱 Frontend SPA"]
+        V[BibliotecaTerror<br/>Vue 3 + Vite<br/>:5173]
+    end
+
+    subgraph Backends["⚙️ Backends PHP"]
+        A[ApiLoging<br/>Auth + JWT<br/>:8000]
+        L[libros_api<br/>Catálogo + Préstamos<br/>:8080]
+    end
+
+    subgraph DB["🗄️ MySQL :3306"]
+        DB1[(bibliouser<br/>9 tablas<br/>users, tokens, security)]
+        DB2[(librum-tenebris<br/>3 tablas<br/>libros, prestamos, favoritos)]
+    end
+
+    subgraph Externos["☁️ Servicios externos"]
+        N[Notion API<br/>sync de libros y préstamos]
+        M[SMTP<br/>verificación, reset, alertas]
+        G[GeoIP2<br/>alertas geo en login]
+    end
+
+    B -->|HTTPS| V
+    V -->|/auth/*<br/>JWT Bearer| A
+    V -->|/api/*<br/>action=...| L
+    A -->|PDO| DB1
+    L -->|PDO| DB2
+    L -->|usuario por DNI| DB1
+    A -.->|verificación email,<br/>reset password| M
+    A -.->|GeoLocation| G
+    L -.->|sync de catálogo<br/>y préstamos| N
+
+    classDef frontend fill:#42b883,stroke:#2c8c63,color:#fff
+    classDef backend fill:#777bb4,stroke:#4f5b93,color:#fff
+    classDef db fill:#4479a1,stroke:#2b5980,color:#fff
+    classDef ext fill:#888,stroke:#555,color:#fff
+    class V frontend
+    class A,L backend
+    class DB1,DB2 db
+    class N,M,G ext
+```
 
 ## Requisitos previos
 
@@ -162,9 +223,13 @@ Toda la memoria del TFG está en [`Documentacion/`](Documentacion/):
 - [`DOCUMENTACION.md`](Documentacion/DOCUMENTACION.md) — documento general.
 - [`documentacion_frontend.md`](Documentacion/documentacion_frontend.md) — arquitectura del frontend Vue.
 - [`documentacion_backend.md`](Documentacion/documentacion_backend.md) — diseño de los backends PHP.
-- [`documentacion_basedatos.md`](Documentacion/documentacion_basedatos.md) — modelo de datos y esquemas SQL.
+- [`documentacion_basedatos.md`](Documentacion/documentacion_basedatos.md) — modelo de datos, esquemas SQL y **diagrama ER**.
+- [`documentacion_uml.md`](Documentacion/documentacion_uml.md) — **diagramas UML**: casos de uso por rol, secuencia (login JWT, préstamo, recuperación de password), clases del backend y despliegue en Hostinger.
+- [`documentacion_api.md`](Documentacion/documentacion_api.md) — **referencia completa de la API REST** (ApiLoging + libros_api).
 - [`documentacion_estilos.md`](Documentacion/documentacion_estilos.md) — sistema de diseño y estilos.
 - [`documentacion_seo.md`](Documentacion/documentacion_seo.md) — estrategia de SEO.
+- [`bibliografia.md`](Documentacion/bibliografia.md) — fuentes consultadas (Vue, PHP, RFC 7519 JWT, OWASP, WCAG, Schema.org…).
+- [`postman/Librum_Tenebris.postman_collection.json`](Documentacion/postman/Librum_Tenebris.postman_collection.json) — colección Postman lista para importar (login auto-rellena `{{jwt}}` y `{{usuario_id}}`).
 - [`RELEASES.md`](Documentacion/RELEASES.md) — guía para empaquetar releases y desplegar en Hostinger.
 - [`CAMBIOS_APILOGING_2026-04-23.md`](Documentacion/CAMBIOS_APILOGING_2026-04-23.md) — changelog de la sincronización de seguridad de ApiLoging.
 - [`snippets_documentacion.md`](Documentacion/snippets_documentacion.md) — fragmentos de código destacados para la memoria del TFG.
