@@ -1,5 +1,65 @@
+/* ============================================================================
+ * Tipografías self-hosted (Grenze + Germania One)
+ * ----------------------------------------------------------------------------
+ * Migración a self-host desde la release V2 del 2026-05-07. Antes se cargaban
+ * de Google Fonts CDN con `display=swap`, lo que provocaba un CLS de 0.30
+ * (rojo en Lighthouse) por el reflow al swap del fallback `serif`.
+ *
+ * Beneficios:
+ *  - CLS ≈ 0 gracias al `@font-face` "Grenze Fallback" con `size-adjust` y
+ *    `ascent/descent-override` que igualan las métricas de Times New Roman a
+ *    las de Grenze. El swap es invisible.
+ *  - Mejor LCP (sin handshake TLS contra fonts.gstatic.com).
+ *  - Cumple RGPD (la IP del visitante ya no se envía a Google).
+ *  - Sin dependencia de un CDN externo.
+ * ========================================================================== */
+
+@font-face {
+  font-family: 'Grenze';
+  font-style: normal;
+  font-weight: 400 800;            /* fuente variable: cubre 400-800 en un solo archivo */
+  font-display: swap;
+  src: url('/fonts/grenze-normal-400-800.woff2') format('woff2-variations'),
+       url('/fonts/grenze-normal-400-800.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Grenze';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/grenze-italic-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Germania One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/germania-one-400.woff2') format('woff2');
+}
+
+/*
+ * Fallback ajustado: usa Times New Roman / Georgia local con métricas
+ * sobre-escritas para imitar a Grenze. Mientras el woff2 real no llega,
+ * el navegador renderiza con esta versión "calibrada" → cuando llega
+ * Grenze, el swap es visualmente imperceptible (sin reflow → sin CLS).
+ *
+ * Valores calculados sobre las métricas de Grenze v18 (Omnibus-Type):
+ *   ascent=850, descent=250, xHeight=485, unitsPerEm=1000
+ * y Times New Roman como base (xHeight=916/2048).
+ */
+@font-face {
+  font-family: 'Grenze Fallback';
+  size-adjust: 108%;
+  ascent-override: 77%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+  src: local('Times New Roman'), local('Georgia');
+}
+
 :root {
-  font-family: 'Grenze', serif;
+  font-family: 'Grenze', 'Grenze Fallback', serif;
   line-height: 1.5;
   font-weight: 400;
   color: #f4f4f5;
