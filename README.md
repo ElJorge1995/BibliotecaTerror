@@ -26,6 +26,22 @@ autenticación centralizada, catálogo de libros y panel de carga.
 **Base de datos** — MySQL (dos bases: `bibliouser` y `librum-tenebris`).
 **Entorno de desarrollo** — XAMPP (Apache + MySQL).
 
+## Requisitos previos
+
+Antes de arrancar el proyecto necesitas instalar:
+
+| Programa | Versión | Para qué |
+|---|---|---|
+| [XAMPP](https://www.apachefriends.org/) | 8.x | Aporta MySQL/MariaDB. Apache opcional (los backends PHP se sirven con `php -S`). |
+| [PHP](https://www.php.net/downloads) | **8.0+** | Backends `ApiLoging` y `libros_api`. El que trae XAMPP vale; alternativamente un PHP standalone en el `PATH`. |
+| [Node.js](https://nodejs.org/) | **20+** (probado con 24) | Frontend Vue 3 + Vite. Incluye `npm` (probado con 11.x). |
+| [Composer](https://getcomposer.org/) | 2.x | **Opcional** — solo si vas a actualizar las dependencias PHP de `ApiLoging`. La carpeta `vendor/` ya está versionada. |
+| [Git](https://git-scm.com/) | — | Para clonar el repositorio. |
+| Navegador moderno | — | Chrome, Firefox o Edge en versión actualizada. |
+
+> Extensiones PHP requeridas: `pdo_mysql`, `mbstring`, `openssl`, `curl`,
+> `fileinfo`, `gd`. Todas vienen activas en XAMPP por defecto.
+
 ## Servicios y puertos (desarrollo)
 
 | # | Servicio | Puerto | Carpeta |
@@ -95,6 +111,49 @@ taskkill //F //IM node.exe
 > Esto mata **todos** los procesos PHP y Node del sistema. Si tienes otros
 > proyectos corriendo, párelos selectivamente con `taskkill //PID <pid> //F`
 > usando los PIDs de `netstat -ano | findstr LISTENING`.
+
+## Modo producción (build) — pruebas reales de SEO
+
+`npm run dev` levanta el servidor de Vite con hot-reload, pero **el HTML
+servido no es el final**: meta tags inyectadas dinámicamente, sin
+minificación y con módulos sin agrupar. Para auditar SEO, Open Graph,
+sitemap o robots de forma realista hay que servir el **build de
+producción**.
+
+### 1. Compilar el frontend
+
+```bash
+cd "BibliotecaTerror"
+npm run build
+```
+
+Esto genera la carpeta `BibliotecaTerror/dist/` con el HTML, JS y CSS
+minificados, más los activos estáticos de SEO (`robots.txt`, `sitemap.xml`,
+`og-image.png`, `favicon.ico`).
+
+### 2. Servir el build
+
+```bash
+npm run preview
+```
+
+Vite Preview sirve `dist/` en [http://localhost:4173](http://localhost:4173)
+con el HTML real que verán los crawlers (Googlebot, Lighthouse, validadores
+de Open Graph, etc.).
+
+> **Aviso** — el proxy `/auth` y `/api` de `vite.config.js` solo aplica al
+> servidor de desarrollo, **no a `preview`**. Para SEO esto da igual (las
+> metas, OG, JSON-LD, sitemap y robots son estáticos en `dist/`), pero si
+> necesitas que la app llame a los backends durante el preview, levanta
+> también `ApiLoging` (8000) y `libros_api` (8080) y configura un proxy
+> propio o accede a las URLs absolutas.
+
+### 3. Herramientas recomendadas para auditar
+
+- **[Lighthouse](https://developer.chrome.com/docs/lighthouse/overview)** (DevTools de Chrome) — performance, SEO y accesibilidad.
+- **[OpenGraph.xyz](https://www.opengraph.xyz/)** — vista previa de las cards de redes sociales.
+- **[Rich Results Test](https://search.google.com/test/rich-results)** — validación del JSON-LD.
+- **[validator.w3.org](https://validator.w3.org/)** — HTML semántico.
 
 ## Documentación
 
