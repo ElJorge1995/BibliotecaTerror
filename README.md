@@ -4,6 +4,9 @@ Trabajo de Fin de Grado del ciclo **DAW** (Desarrollo de Aplicaciones Web).
 Una biblioteca digital especializada en literatura de terror, con
 autenticación centralizada, catálogo de libros y panel de carga.
 
+> **Demo en producción** — [mediumvioletred-grouse-788941.hostingersite.com](https://mediumvioletred-grouse-788941.hostingersite.com)
+> Desplegado en Hostinger (Premium Web Hosting).
+
 ## Estructura del repositorio
 
 | Carpeta | Descripción |
@@ -14,7 +17,7 @@ autenticación centralizada, catálogo de libros y panel de carga.
 | [`backend/cargalibros/`](backend/cargalibros/) | Panel de administración para alta, edición, importación y traducción de libros. |
 | [`database/`](database/) | Esquemas SQL e instalador de las bases de datos. |
 | [`Documentacion/`](Documentacion/) | Memoria del TFG: anteproyecto, planificación y documentación técnica. |
-| [`ReleasesEstables/`](ReleasesEstables/) | Builds estables de cada componente. |
+| [`ReleasesEstables/`](ReleasesEstables/) | Paquetes estables listos para subir a Hostinger (`public_html/` + SQLs). Convención: `RELEASE_HOSTINGER_LIBRUMTENEBRIS_<YYYY-MM-DD>_V<N>`. |
 
 ## Stack técnico
 
@@ -103,6 +106,9 @@ Toda la memoria del TFG está en [`Documentacion/`](Documentacion/):
 - [`documentacion_basedatos.md`](Documentacion/documentacion_basedatos.md) — modelo de datos y esquemas SQL.
 - [`documentacion_estilos.md`](Documentacion/documentacion_estilos.md) — sistema de diseño y estilos.
 - [`documentacion_seo.md`](Documentacion/documentacion_seo.md) — estrategia de SEO.
+- [`RELEASES.md`](Documentacion/RELEASES.md) — guía para empaquetar releases y desplegar en Hostinger.
+- [`CAMBIOS_APILOGING_2026-04-23.md`](Documentacion/CAMBIOS_APILOGING_2026-04-23.md) — changelog de la sincronización de seguridad de ApiLoging.
+- [`snippets_documentacion.md`](Documentacion/snippets_documentacion.md) — fragmentos de código destacados para la memoria del TFG.
 - [`TFG-Planificacion.pdf`](Documentacion/TFG-Planificacion.pdf) — planificación temporal.
 - [`anteproyecto_daw.pdf`](Documentacion/anteproyecto_daw.pdf) — anteproyecto inicial.
 
@@ -114,3 +120,8 @@ de Aplicaciones Web por:
 - **Jorge Núñez Granero**
 - **Alejandro del Campo Ortiz**
 - **Eva María Sánchez Zamora**
+
+## Licencia
+
+Distribuido bajo licencia **MIT**. Ver [`LICENSE`](LICENSE) para los términos
+completos.
