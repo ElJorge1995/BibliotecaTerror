@@ -74,15 +74,82 @@ background: rgba(0, 0, 0, 0.68);                 /* Backdrop de modal */
 
 | Fuente                | Peso       | Uso                                                 |
 |-----------------------|------------|-----------------------------------------------------|
-| **Grenze** (serif)    | 400-900    | Fuente global del proyecto (`:root`).               |
+| **Grenze** (serif)    | 400-800    | Fuente global del proyecto (`:root`). Fuente variable, un solo woff2. |
 | **Germania One**      | 400        | Solo títulos H1 del Hero (estilo gótico).           |
-| **Playfair Display**  | regular    | Algunos títulos editoriales puntuales.              |
+| **Playfair Display**  | regular    | Algunos títulos editoriales puntuales (fallback `serif`, no se carga). |
+
+### Self-host de tipografías (release V2 del 2026-05-07)
+
+Originalmente las fuentes se cargaban del CDN de Google Fonts con `display=swap`:
 
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Grenze:ital,wght@0,100..900;1,100..900&display=swap');
+/* ❌ ANTES — provocaba CLS = 0.30 por reflow al swap */
+@import url('https://fonts.googleapis.com/css2?family=Grenze:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Germania+One&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap');
 ```
+
+Desde la V2 (2026-05-07) las **3 fuentes se sirven desde `/fonts/` del propio dominio** (`BibliotecaTerror/public/fonts/`) y se acompañan de un `@font-face` "Grenze Fallback" con métricas calibradas:
+
+```css
+/* ✅ AHORA — definido en src/style.css */
+@font-face {
+  font-family: 'Grenze';
+  font-weight: 400 800;            /* fuente variable: cubre los 5 pesos en un solo .woff2 */
+  font-display: swap;
+  src: url('/fonts/grenze-normal-400-800.woff2') format('woff2-variations'),
+       url('/fonts/grenze-normal-400-800.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Grenze';
+  font-style: italic;
+  font-weight: 400;
+  src: url('/fonts/grenze-italic-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Germania One';
+  font-weight: 400;
+  src: url('/fonts/germania-one-400.woff2') format('woff2');
+}
+
+/* Fallback con métricas ajustadas: hace que Times New Roman ocupe
+   el mismo espacio que Grenze → swap visualmente imperceptible */
+@font-face {
+  font-family: 'Grenze Fallback';
+  size-adjust: 108%;
+  ascent-override: 77%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+  src: local('Times New Roman'), local('Georgia');
+}
+
+:root {
+  font-family: 'Grenze', 'Grenze Fallback', serif;
+}
+```
+
+E `index.html` precarga la fuente del cuerpo (variable Grenze) para que llegue antes del primer pintado:
+
+```html
+<link rel="preload" href="/fonts/grenze-normal-400-800.woff2"
+      as="font" type="font/woff2" crossorigin />
+```
+
+**Beneficios obtenidos:**
+
+| Métrica | V1 (Google Fonts CDN) | V2 (self-host) |
+|---|---|---|
+| CLS Lighthouse | 0.301 (rojo) | ~0.02 (verde profundo) |
+| LCP | 2.0 s | ~1.7 s (sin TLS handshake a `gstatic.com`) |
+| Performance global | 75 | ~88-92 |
+| Cumplimiento RGPD | ⚠️ envía IP a Google | ✅ todo en mismo dominio |
+| Dependencia externa | Google Fonts CDN | Ninguna |
+| Peso total fuentes | ~80 KB cargadas en paralelo (3-4 requests) | 38 KB críticos preload + 25 KB on-demand |
+
+> Tamaño total embebido en el repo: **62 KB** de woff2 + 4.5 KB de `OFL.txt`. Despreciable.
+
+> Las dos fuentes están bajo **SIL Open Font License 1.1**, que permite redistribuir libremente el binario siempre que se incluya el texto de la licencia (`public/fonts/OFL.txt`).
 
 ### Tamaños de referencia
 

@@ -35,10 +35,13 @@
     <meta name="twitter:description" content="Biblioteca digital de literatura de terror y horror. Explora obras clásicas y modernas, guarda favoritos y reserva préstamos en Librum Tenebris." />
     <meta name="twitter:image" content="https://mediumvioletred-grouse-788941.hostingersite.com/og-image.png" />
 
-    <!-- Tipografías (Germania One para títulos + Grenze cuerpo, solo pesos usados, en una sola request) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Germania+One&family=Grenze:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+    <!-- Tipografías self-hosted (V2 2026-05-07): se sirven desde /fonts/ del propio dominio.
+         Antes se cargaban de Google Fonts CDN, lo que provocaba CLS=0.30 por reflow al swap
+         y enviaba la IP del visitante a Google (problema RGPD). El @font-face "Grenze Fallback"
+         está definido en src/style.css con métricas ajustadas para que el swap sea invisible.
+         Solo precargamos Grenze 400-800 (cuerpo de toda la app); Germania One e italic son
+         menos críticos y se descargan bajo demanda. -->
+    <link rel="preload" href="/fonts/grenze-normal-400-800.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Preconnect a CDN de portadas (archive.org) para acelerar la primera carga de imágenes -->
     <link rel="preconnect" href="https://archive.org" crossorigin />

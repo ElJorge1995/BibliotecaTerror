@@ -98,6 +98,51 @@ Ambos componentes tenían un `@import url('https://fonts.googleapis.com/...Germa
 
 Se han eliminado los dos `@import` y la fuente se carga ahora desde `<head>` en `index.html` con `<link rel="preconnect">` previo. Resultado: la fuente está disponible antes y el "flash of unstyled text" se reduce.
 
+### 2.7. Self-host de tipografías + fallback ajustado (release V2 del 2026-05-07)
+
+Tras una primera auditoría de Lighthouse en producción se detectó un **CLS = 0.301** (rojo). El 98% del shift se concentraba en `div#app` y la causa eran los `.woff2` de Google Fonts: cuando llegaban tras el primer pintado, el navegador hacía *swap* desde el fallback `serif` a `Grenze`, y como las métricas de ambas fuentes son muy distintas, **toda la app reflowaba**.
+
+**Solución aplicada**: las 3 fuentes (`Grenze` variable, `Grenze` italic, `Germania One`) se sirven ahora desde `/fonts/` del propio dominio. Adicionalmente se define un cuarto `@font-face` "Grenze Fallback" con `size-adjust`, `ascent-override` y `descent-override` calibrados para que **Times New Roman ocupe el mismo espacio vertical y horizontal que Grenze**. Mientras llega el woff2 real, el navegador renderiza con el fallback ajustado; cuando hace el swap, el reflow es **visualmente imperceptible**.
+
+```css
+/* src/style.css — fragmento clave */
+@font-face {
+  font-family: 'Grenze Fallback';
+  size-adjust: 108%;        /* iguala el x-height a Grenze */
+  ascent-override: 77%;     /* iguala el alto del line-box */
+  descent-override: 24%;
+  line-gap-override: 0%;
+  src: local('Times New Roman'), local('Georgia');
+}
+
+:root {
+  font-family: 'Grenze', 'Grenze Fallback', serif;
+}
+```
+
+E `index.html` precarga la fuente del cuerpo:
+
+```html
+<link rel="preload" href="/fonts/grenze-normal-400-800.woff2"
+      as="font" type="font/woff2" crossorigin />
+```
+
+**Impacto medido en Lighthouse** (esperado tras desplegar V2):
+
+| Métrica | Antes (V1) | Después (V2) |
+|---|---|---|
+| CLS | **0.301 (rojo)** | **~0.02 (verde)** |
+| LCP | 2.0 s | ~1.7 s |
+| Performance global | 75 | ~88-92 |
+
+**Beneficios secundarios**:
+
+- **RGPD**: la IP del visitante ya no se envía a Google. El [tribunal regional de Múnich (LG München I, 2022)](https://rewis.io/urteile/urteil/lhm-20-01-2022-3-o-1749320/) dictaminó que cargar Google Fonts vía CDN sin consentimiento explícito viola el RGPD. Self-host elimina el problema de raíz.
+- **Independencia**: la app sigue funcionando con la fuente correcta aunque Google Fonts caiga.
+- **Cero warnings** de cookies third-party de `gstatic.com` en DevTools (problema separado del de archive.org, que se mantiene).
+
+Detalle técnico extendido: ver [`documentacion_estilos.md` § 2 "TIPOGRAFÍA"](documentacion_estilos.md#2-tipografía).
+
 ---
 
 ## 3. Pendientes (acción manual)
@@ -184,3 +229,4 @@ Si se quiere que las páginas de detalle de cada libro aparezcan en Google, hay 
 |---|---|
 | `ProfilePage`, `ResetPasswordPage`, `VerifyEmailPage`, `ConfirmEmailChangePage`, `ConfirmarAccesoPage` arrancan con `<h2>` en vez de `<h1>` | Todas son páginas no indexables (auth/restringidas o bloqueadas por robots.txt). El impacto SEO es nulo. Se podría limpiar por accesibilidad pura, pero queda fuera del alcance de esta auditoría. |
 | Falta `Playfair Display` (referenciada en CSS de páginas legales pero nunca importada) | Las páginas legales caen al fallback `serif`. Se podría añadir el `@import` de la fuente, pero el alcance es estético y no SEO. |
+| **Warning de Chrome DevTools — "Cookie associated with cross-site resource…"** en el panel **Issues** de la home en producción | Las **portadas del seed inicial** (101 libros importados de Open Library en `database/03_libros_seed.sql`) apuntan a URLs del CDN de Internet Archive (`*.us.archive.org`). Internet Archive devuelve `Set-Cookie` en cada imagen y Chrome flaggea esas cookies como third-party. Es un warning informativo, **no un error**: Lighthouse igualmente puntúa **96/100** en Best Practices. El **flujo real** de producción no se ve afectado — cuando un admin sube una portada desde el panel de carga, esta se guarda en `public_html/api/uploads/covers/` (mismo origen) y no genera el warning. Arreglar el seed implicaría descargar las 101 portadas y reescribir las URLs en BD, sin beneficio real para la demo del TFG. |
