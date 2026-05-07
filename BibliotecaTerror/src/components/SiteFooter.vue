@@ -48,6 +48,15 @@ const currentYear = new Date().getFullYear()
         <address class="footer-contact">
           <p><strong>Email:</strong> regladoconsultores@gmail.com</p>
           <p><strong>Horario:</strong> Siempre abierto (somos digitales)</p>
+          <p>
+            <strong>Ubicación:</strong>
+            <a
+              href="https://www.google.com/maps/place/Cortijo+del+Fraile/@36.8656295,-2.0750612,17z"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="footer-location"
+            >Cortijo del Fraile, Níjar (Almería)</a>
+          </p>
         </address>
       </div>
 
@@ -169,6 +178,18 @@ const currentYear = new Date().getFullYear()
 
 .footer-contact strong {
   color: #d1d5e0;
+}
+
+.footer-location {
+  color: #8a94ab;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(237, 77, 77, 0.35);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.footer-location:hover {
+  color: #ed4d4d;
+  border-bottom-color: #ed4d4d;
 }
 
 /* Bottom bar */
