@@ -87,21 +87,51 @@ flowchart LR
     class N,M,G ext
 ```
 
-## Requisitos previos
+## Prerrequisitos
 
-Antes de arrancar el proyecto necesitas instalar:
+Antes de arrancar el proyecto en local hay que instalar lo siguiente. Si solo
+se quiere **revisar el bundle compilado** del frontend, basta con XAMPP + PHP
+(el `dist/` ya está incluido en la entrega y se puede servir directamente sin
+Node.js — ver [§ Modo producción](#modo-producción-build--pruebas-reales-de-seo)).
 
-| Programa | Versión | Para qué |
-|---|---|---|
-| [XAMPP](https://www.apachefriends.org/) | 8.x | Aporta MySQL/MariaDB. Apache opcional (los backends PHP se sirven con `php -S`). |
-| [PHP](https://www.php.net/downloads) | **8.0+** | Backends `ApiLoging` y `libros_api`. El que trae XAMPP vale; alternativamente un PHP standalone en el `PATH`. |
-| [Node.js](https://nodejs.org/) | **20+** (probado con 24) | Frontend Vue 3 + Vite. Incluye `npm` (probado con 11.x). |
-| [Composer](https://getcomposer.org/) | 2.x | **Opcional** — solo si vas a actualizar las dependencias PHP de `ApiLoging`. La carpeta `vendor/` ya está versionada. |
-| [Git](https://git-scm.com/) | — | Para clonar el repositorio. |
-| Navegador moderno | — | Chrome, Firefox o Edge en versión actualizada. |
+### Software requerido
 
-> Extensiones PHP requeridas: `pdo_mysql`, `mbstring`, `openssl`, `curl`,
+| # | Programa | Versión | Obligatorio | Para qué |
+|---|---|---|---|---|
+| 1 | [XAMPP](https://www.apachefriends.org/) | 8.x | ✅ Sí | Aporta MySQL/MariaDB. Apache opcional (los backends PHP se sirven con `php -S`). |
+| 2 | [PHP](https://www.php.net/downloads) | **8.0+** | ✅ Sí | Backends `ApiLoging` y `libros_api`. El que trae XAMPP vale; alternativamente un PHP standalone en el `PATH`. |
+| 3 | [Node.js](https://nodejs.org/) | **20+** (probado con 24) | ⚠️ Solo dev | Frontend Vue 3 + Vite. Incluye `npm` (probado con 11.x). No necesario si solo se sirve el `dist/` precompilado. |
+| 4 | [Composer](https://getcomposer.org/) | 2.x | ❌ Opcional | Solo si se van a actualizar las dependencias PHP de `ApiLoging`. La carpeta `vendor/` ya está versionada. |
+| 5 | [Git](https://git-scm.com/) | — | ❌ Opcional | Para clonar el repositorio. La entrega como `.zip` no lo requiere. |
+| — | Navegador moderno | — | ✅ Sí | Chrome, Firefox o Edge en versión actualizada. |
+
+> **Extensiones PHP requeridas**: `pdo_mysql`, `mbstring`, `openssl`, `curl`,
 > `fileinfo`, `gd`. Todas vienen activas en XAMPP por defecto.
+
+### Orden de instalación recomendado
+
+1. **Instalar [XAMPP](https://www.apachefriends.org/)** — al terminar, abrir el
+   *XAMPP Control Panel* y arrancar **MySQL** (el módulo Apache no es
+   necesario, los backends se levantan con `php -S`).
+2. **Verificar PHP** — el PHP de XAMPP (`C:\xampp\php\php.exe`) ya incluye
+   todas las extensiones requeridas. Añadirlo al `PATH` o llamarlo por su ruta
+   absoluta en los comandos del paso "Cómo arrancarlo".
+3. **(Opcional) Instalar [Node.js](https://nodejs.org/) 20+** — solo si se
+   quiere ejecutar el frontend en modo desarrollo (`npm run dev`) o
+   recompilar. La entrega ya trae `BibliotecaTerror/dist/` listo para servir.
+4. **Importar las bases de datos** — desde phpMyAdmin (`http://localhost/phpmyadmin`)
+   importar `database/install_databases.sql`. Crea las dos bases
+   (`bibliouser` y `librum-tenebris`) y carga el seed inicial.
+5. **Arrancar los backends y el frontend** — seguir el orden estricto de la
+   sección [Cómo arrancarlo](#cómo-arrancarlo) (ApiLoging :8000 →
+   libros_api :8080 → Vite :5173).
+
+> **Para el tribunal** — si no se quiere instalar Node.js, esta entrega incluye
+> el bundle de producción ya compilado en `BibliotecaTerror/dist/`. Se puede
+> servir directamente con `php -S localhost:4173 -t BibliotecaTerror/dist` (o
+> copiarlo a `C:\xampp\htdocs\librum\` y abrir `http://localhost/librum/`).
+> Para la experiencia completa, sigue estando disponible la
+> [demo en producción](https://mediumvioletred-grouse-788941.hostingersite.com).
 
 ## Servicios y puertos (desarrollo)
 
