@@ -132,6 +132,16 @@ SOURCE database/install_databases.sql;
 Esto crea las dos bases (`bibliouser` para usuarios y `librum-tenebris` para
 el catálogo) y carga el seed inicial.
 
+> **Pruebas con libros adicionales** — si necesitas poblar el catálogo con
+> más libros para pruebas, ejecuta manualmente el importador de Google Books
+> (inserta 100 libros de terror filtrando los que tengan autor, descripción
+> y portada). Requiere `pip install requests mysql-connector-python`:
+>
+> ```bash
+> cd backend/cargalibros
+> python importar_libros_googlebooks.py
+> ```
+
 ### 2. Backends y frontend (orden estricto)
 
 Lanza los tres servicios en este orden, con una pequeña pausa entre cada
