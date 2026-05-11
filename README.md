@@ -168,7 +168,26 @@ SOURCE database/install_databases.sql;
 ```
 
 Esto crea las dos bases (`bibliouser` para usuarios y `librum-tenebris` para
-el catálogo) y carga el seed inicial.
+el catálogo) y carga el seed inicial de **100 libros de horror clásico**
+(Open Library) en la tabla `libros`.
+
+> **Aviso sobre los avisos `#1046 Base de datos no seleccionada` en
+> phpMyAdmin**: son un artefacto cosmético del visor de phpMyAdmin, no
+> errores reales. El visor muestra el "estado de sesión" entre cada bloque
+> del script y, mientras se ejecutan los `CREATE DATABASE` iniciales, la
+> sesión todavía no tiene una BD seleccionada en su panel; los `USE` del
+> propio script establecen el contexto inmediatamente después. Si al
+> terminar la importación ves la línea verde *"Importación ejecutada
+> exitosamente, N consultas ejecutadas"*, el script ha funcionado. Verifica
+> en el panel izquierdo que aparecen `bibliouser` y `librum-tenebris` con
+> sus tablas, o ejecuta:
+>
+> ```sql
+> SELECT COUNT(*) AS users FROM `bibliouser`.users;
+> SELECT COUNT(*) AS libros FROM `librum-tenebris`.libros;
+> ```
+>
+> Resultado esperado: `users = 0`, `libros = 100`.
 
 > **Pruebas con libros adicionales** — si necesitas poblar el catálogo con
 > más libros para pruebas, ejecuta manualmente el importador de Google Books
