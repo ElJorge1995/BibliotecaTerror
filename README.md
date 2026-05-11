@@ -246,17 +246,26 @@ cd "BibliotecaTerror" && npm run dev > /tmp/libratenebris_03_vite.log 2>&1 &
 sleep 3
 ```
 
-**PowerShell** (Windows — equivalente con `Start-Process` en background):
+**PowerShell** (Windows — cada servidor en su propia ventana, prompt principal libre):
 
 ```powershell
-$logs = $env:TEMP
-Start-Process php -ArgumentList '-S','localhost:8000' -WorkingDirectory 'ApiLoging' -RedirectStandardOutput "$logs\libratenebris_01_apiloging.log" -RedirectStandardError "$logs\libratenebris_01_apiloging.err" -WindowStyle Hidden
+Start-Process powershell -ArgumentList '-NoExit','-Command',"Set-Location 'ApiLoging'; Write-Host '== ApiLoging :8000 ==' -ForegroundColor Green; php -S localhost:8000"
 Start-Sleep 1
-Start-Process php -ArgumentList '-S','localhost:8080','-t','backend/libros_api' -RedirectStandardOutput "$logs\libratenebris_02_libros.log" -RedirectStandardError "$logs\libratenebris_02_libros.err" -WindowStyle Hidden
+Start-Process powershell -ArgumentList '-NoExit','-Command',"Write-Host '== libros_api :8080 ==' -ForegroundColor Green; php -S localhost:8080 -t 'backend/libros_api'"
 Start-Sleep 1
-Start-Process npm.cmd -ArgumentList 'run','dev' -WorkingDirectory 'BibliotecaTerror' -RedirectStandardOutput "$logs\libratenebris_03_vite.log" -RedirectStandardError "$logs\libratenebris_03_vite.err" -WindowStyle Hidden
+Start-Process powershell -ArgumentList '-NoExit','-Command',"Set-Location 'BibliotecaTerror'; Write-Host '== Vite :5173 ==' -ForegroundColor Green; npm run dev"
 Start-Sleep 3
 ```
+
+> Esta variante abre **tres ventanas de PowerShell**, una por servicio, con
+> los logs en vivo y un encabezado verde para identificarlas. El prompt
+> original vuelve libre nada más terminar `Start-Sleep 3`. Para parar un
+> servicio basta con cerrar su ventana o pulsar `Ctrl+C` dentro de ella.
+>
+> Se evita `-RedirectStandardOutput` a fichero porque en Windows PowerShell
+> 5.1 el cmdlet mantiene los handles de los ficheros abiertos en el proceso
+> padre y deja el prompt aparentemente "ocupado" hasta que cierres todos los
+> servicios.
 
 ### 3. Verificación
 
@@ -341,6 +350,11 @@ desbloquearán las acciones de gestión de usuarios, libros y préstamos.
 > `UPDATE bibliouser.users SET role = 'admin' WHERE id = 1;`.
 
 ### 5. Cómo parar todo
+
+> Si has usado el bloque PowerShell que abre tres ventanas, lo más sencillo
+> es **cerrar cada ventana** (o pulsar `Ctrl+C` dentro). Los comandos de
+> abajo siguen funcionando si prefieres matarlos desde una sola línea o si
+> has perdido las ventanas de vista.
 
 **Bash / Git Bash** (el doble `//` es Git Bash-específico, escapa el slash):
 
