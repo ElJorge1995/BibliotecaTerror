@@ -228,12 +228,25 @@ curl -s -o /dev/null -w "Vite       /         : HTTP %{http_code}\n" http://loca
   @{ Nombre='libros_api recientes'; Url='http://localhost:8080/libros_api.php?action=recientes&limit=1' },
   @{ Nombre='Vite       /        '; Url='http://localhost:5173/' }
 ) | ForEach-Object {
+  $name = $_.Nombre
   try {
-    $r = Invoke-WebRequest -Uri $_.Url -UseBasicParsing -SkipHttpErrorCheck
-    "$($_.Nombre): HTTP $($r.StatusCode)"
-  } catch { "$($_.Nombre): HTTP $($_.Exception.Response.StatusCode.value__)" }
+    $r = Invoke-WebRequest -Uri $_.Url -UseBasicParsing -TimeoutSec 10
+    "$($name): HTTP $($r.StatusCode)"
+  } catch {
+    if ($_.Exception.Response) {
+      "$($name): HTTP $([int]$_.Exception.Response.StatusCode)"
+    } else {
+      "$($name): ERROR ($($_.Exception.Message))"
+    }
+  }
 }
 ```
+
+> El parámetro `-SkipHttpErrorCheck` solo existe en **PowerShell 7+**. En el
+> *Windows PowerShell 5.1* que trae Windows por defecto, las respuestas 4xx/5xx
+> lanzan excepción y se capturan en el bloque `catch` para extraer el código.
+> Además, dentro del `catch` el `$_` ya no es el ítem del pipeline sino el
+> `ErrorRecord`, por eso guardamos el nombre en `$name` fuera del `try`.
 
 Códigos esperados:
 
