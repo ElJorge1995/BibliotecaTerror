@@ -131,10 +131,13 @@ Hay dos formas de evaluar el proyecto:
    absoluta en los comandos del paso "Cómo arrancarlo".
 3. **Instalar [Node.js](https://nodejs.org/) 20+** — necesario para levantar
    el frontend con `npm run dev` (Vite hace de proxy de los backends).
-4. **Importar las bases de datos** — desde phpMyAdmin (`http://localhost/phpmyadmin`)
+4. **`npm install` dentro de `BibliotecaTerror/`** — descarga las dependencias
+   del frontend (Vue, Vite, Pinia, Axios, Swiper). El zip **no incluye**
+   `node_modules/`. Una sola vez por máquina, tarda 30–90 s.
+5. **Importar las bases de datos** — desde phpMyAdmin (`http://localhost/phpmyadmin`)
    importar `database/install_databases.sql`. Crea las dos bases
    (`bibliouser` y `librum-tenebris`) y carga el seed inicial.
-5. **Arrancar los backends y el frontend** — seguir el orden estricto de la
+6. **Arrancar los backends y el frontend** — seguir el orden estricto de la
    sección [Cómo arrancarlo](#cómo-arrancarlo) (ApiLoging :8000 →
    libros_api :8080 → Vite :5173).
 
@@ -179,8 +182,24 @@ el catálogo) y carga el seed inicial.
 
 ### 2. Backends y frontend (orden estricto)
 
-Lanza los tres servicios en este orden, con una pequeña pausa entre cada
-uno. Cada `&` envía el proceso a background y los logs van a `/tmp/`:
+> [!IMPORTANT]
+> **Antes de la primera ejecución: `npm install`.** El zip de entrega **no
+> incluye `node_modules/`** (son 51 MB de dependencias regenerables). Sin este
+> paso, `npm run dev` fallará con *"Cannot find module"* y el frontend no
+> arrancará. Es una sola vez por máquina:
+>
+> ```bash
+> cd BibliotecaTerror
+> npm install
+> cd ..
+> ```
+>
+> Funciona en cualquier shell (Bash, PowerShell o CMD). Tarda 30–90 s según
+> conexión, descarga ~250 MB y los deja en `BibliotecaTerror/node_modules/`.
+
+Una vez instaladas las dependencias, lanza los tres servicios en este orden,
+con una pequeña pausa entre cada uno. Cada `&` envía el proceso a background
+y los logs van a `/tmp/`:
 
 **Bash / Git Bash** (Windows con Git for Windows, Linux o macOS):
 
@@ -204,9 +223,6 @@ Start-Sleep 1
 Start-Process npm.cmd -ArgumentList 'run','dev' -WorkingDirectory 'BibliotecaTerror' -RedirectStandardOutput "$logs\libratenebris_03_vite.log" -RedirectStandardError "$logs\libratenebris_03_vite.err" -WindowStyle Hidden
 Start-Sleep 3
 ```
-
-> Si es la primera vez, ejecuta `npm install` dentro de `BibliotecaTerror/`
-> antes del paso del frontend.
 
 ### 3. Verificación
 
