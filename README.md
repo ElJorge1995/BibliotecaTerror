@@ -15,6 +15,21 @@ autenticación centralizada, catálogo de libros y panel de carga.
 > **Demo en producción** — [mediumvioletred-grouse-788941.hostingersite.com](https://mediumvioletred-grouse-788941.hostingersite.com)
 > Desplegado en Hostinger (Premium Web Hosting).
 
+> [!IMPORTANT]
+> **Usuario administrador pre-creado para evaluación local** — tras importar
+> `database/install_databases.sql` ya existe un admin listo para usar, sin
+> necesidad de registrarse ni de configurar SMTP:
+>
+> | Campo | Valor |
+> |---|---|
+> | **Email** | `admin@libraries.test` |
+> | **Contraseña** | `Admin1234` |
+> | **Rol** | `admin` (email ya verificado) |
+>
+> Solo aplica a la instalación local de evaluación. Las credenciales del admin
+> de la **demo en producción** se facilitan al tribunal en el acto de defensa.
+> Más detalles en [§ Cómo arrancarlo → 4. Acceso al panel](#4-acceso-al-panel-de-administración).
+
 ## Estructura del repositorio
 
 | Carpeta | Descripción |
@@ -293,7 +308,39 @@ Códigos esperados:
 
 Una vez verificado, abre [http://localhost:5173](http://localhost:5173).
 
-### 4. Cómo parar todo
+### 4. Acceso al panel de administración
+
+El `install_databases.sql` incluye un **usuario administrador por defecto**
+con el email ya verificado, así que se puede entrar al panel admin sin
+tener que registrarse ni configurar SMTP:
+
+| Campo | Valor |
+|---|---|
+| **Email** | `admin@libraries.test` |
+| **Contraseña** | `Admin1234` |
+| **Rol** | `admin` |
+
+Login en [http://localhost:5173/login](http://localhost:5173/login). Tras
+entrar aparecerán en el header los enlaces del panel admin y se
+desbloquearán las acciones de gestión de usuarios, libros y préstamos.
+
+> **Seguridad**: el hash bcrypt está hardcodeado en el SQL para facilitar
+> la evaluación del tribunal, pero en un entorno de producción real este
+> usuario debe cambiarse o eliminarse. Para regenerar el hash con otra
+> contraseña, edita el `INSERT` final de `install_databases.sql` con la
+> salida de:
+>
+> ```bash
+> php -r "echo password_hash('TU_PASSWORD', PASSWORD_BCRYPT);"
+> ```
+>
+> Si no se desea un admin por defecto, basta con comentar el bloque
+> `INSERT INTO users ... 'admin@libraries.test' ...` del final del script.
+> En ese caso, registra un usuario por la interfaz y luego promociónalo
+> manualmente con
+> `UPDATE bibliouser.users SET role = 'admin' WHERE id = 1;`.
+
+### 5. Cómo parar todo
 
 **Bash / Git Bash** (el doble `//` es Git Bash-específico, escapa el slash):
 

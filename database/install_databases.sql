@@ -254,31 +254,40 @@ CREATE TABLE IF NOT EXISTS `prestamos` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ---- PLANTILLA para crear el usuario admin inicial (descomenta y ajusta) ----
+-- ---- Usuario administrador por defecto -----------------------------------
 --
--- USE `bibliouser`;
+-- Credenciales:
+--   Email:      admin@libraries.test
+--   Password:   Admin1234
+--   Rol:        admin
+--   Email ya verificado (is_email_verified=1) → puede iniciar sesión sin
+--   pasar por el flujo de verificación SMTP.
 --
--- -- El hash de abajo corresponde a la contraseña 'cambiar_en_primer_login'.
--- -- Genera uno nuevo con:   php -r "echo password_hash('TU_PASSWORD', PASSWORD_BCRYPT);"
--- -- y pégalo abajo. O crea un registro normal desde la app y luego:
--- --     UPDATE users SET role='admin' WHERE id=1;
+-- El hash bcrypt de abajo corresponde a 'Admin1234'. Para regenerarlo con
+-- otra contraseña:
+--   php -r "echo password_hash('TU_PASSWORD', PASSWORD_BCRYPT);"
 --
--- INSERT INTO `users` (
---   `username`, `email`, `password`, `name`, `first_name`, `last_name`,
---   `dni`, `phone`, `role`, `is_email_verified`, `email_verified_at`
--- ) VALUES (
---   'admin',
---   'admin@libraries.test',
---   '$2y$10$...PEGA_AQUI_EL_HASH_BCRYPT...',
---   'Administrador',
---   'Administrador',
---   '',
---   '00000000A',
---   NULL,
---   'admin',
---   1,
---   NOW()
--- );
+-- IMPORTANTE: cambia la contraseña tras el primer login en producción
+-- desde el panel de perfil del usuario admin.
+--
+USE `bibliouser`;
+
+INSERT INTO `users` (
+  `username`, `email`, `password`, `name`, `first_name`, `last_name`,
+  `dni`, `phone`, `role`, `is_email_verified`, `email_verified_at`
+) VALUES (
+  'admin',
+  'admin@libraries.test',
+  '$2y$10$hHmLg.jrgHp3maOM1xh9gO4NENm4zLfxs3e0D8LK2bDt64oFeMoBO',
+  'Administrador',
+  'Administrador',
+  '',
+  '00000000A',
+  NULL,
+  'admin',
+  1,
+  NOW()
+);
 
 -- ---- Si Hostinger NO admite el guion en 'librum-tenebris' ----
 --
