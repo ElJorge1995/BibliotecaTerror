@@ -201,7 +201,7 @@ Start-Process php -ArgumentList '-S','localhost:8000' -WorkingDirectory 'ApiLogi
 Start-Sleep 1
 Start-Process php -ArgumentList '-S','localhost:8080','-t','backend/libros_api' -RedirectStandardOutput "$logs\libratenebris_02_libros.log" -RedirectStandardError "$logs\libratenebris_02_libros.err" -WindowStyle Hidden
 Start-Sleep 1
-Start-Process npm -ArgumentList 'run','dev' -WorkingDirectory 'BibliotecaTerror' -RedirectStandardOutput "$logs\libratenebris_03_vite.log" -RedirectStandardError "$logs\libratenebris_03_vite.err" -WindowStyle Hidden
+Start-Process npm.cmd -ArgumentList 'run','dev' -WorkingDirectory 'BibliotecaTerror' -RedirectStandardOutput "$logs\libratenebris_03_vite.log" -RedirectStandardError "$logs\libratenebris_03_vite.err" -WindowStyle Hidden
 Start-Sleep 3
 ```
 
